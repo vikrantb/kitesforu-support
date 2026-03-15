@@ -104,6 +104,86 @@ This is standard link syntax — in other viewers it renders as a normal clickab
 
 ---
 
+## Frontmatter Dashboard
+
+YAML frontmatter with structured fields renders as a visual status dashboard at the top of the document. This is standard YAML — other viewers simply ignore it.
+
+```yaml
+---
+title: Content Domain Classification System
+status: shipped
+date: 2026-03-15
+metrics:
+  - label: PRs Merged
+    value: "6"
+  - label: Domains Live
+    value: "27"
+repos:
+  - name: kitesforu-api
+    github: https://github.com/vikrantb/kitesforu-api
+    branch: main
+abbreviations:
+  LLM: Large Language Model
+  TTS: Text-to-Speech
+  GCS: Google Cloud Storage
+---
+```
+
+**Rendered in our viewer:** Status badge (green=shipped, yellow=in-progress, red=blocked), metric cards in a row, repo links with GitHub icons, and abbreviations get hover tooltips throughout the document.
+
+**In other viewers:** Frontmatter is hidden (GitHub) or shown as raw YAML (some viewers). No harm.
+
+### Supported frontmatter fields
+
+| Field | Type | Effect |
+|-------|------|--------|
+| `title` | string | Used for document title |
+| `status` | string | Colored badge: shipped (green), in-progress (yellow), blocked (red) |
+| `date` | string | Shown next to status |
+| `metrics` | list of `{label, value}` | Rendered as stat cards |
+| `repos` | list of `{name, github, branch}` | Repo badges with GitHub links |
+| `abbreviations` | map of `ABBR: Full Name` | Hover tooltips on all occurrences in text |
+
+---
+
+## Callout Blocks
+
+GitHub-flavored callout syntax using blockquotes. These render as colored callout boxes in our viewer and as indented quotes in other viewers:
+
+```markdown
+> [!NOTE]
+> Regular notes and information.
+
+> [!TIP]
+> Helpful suggestions.
+
+> [!WARNING]
+> Something to be careful about.
+
+> [!IMPORTANT]
+> Critical information.
+
+> [!CAUTION]
+> Dangerous actions or consequences.
+```
+
+### Custom callout types (our viewer only, degrades to blockquotes elsewhere)
+
+```markdown
+> [!TLDR]
+> One-line summary of the section.
+
+> [!DECISION]
+> We chose X over Y because of Z.
+
+> [!COST]
+> This adds approximately $X/month to infrastructure costs.
+```
+
+GitHub renders `[!NOTE]`, `[!TIP]`, `[!WARNING]`, `[!IMPORTANT]`, `[!CAUTION]` natively. The custom types (`TLDR`, `DECISION`, `COST`) degrade to regular blockquotes.
+
+---
+
 ## Collapsible Sections
 
 Use standard HTML `<details>` / `<summary>` for content that should be collapsed by default:
@@ -181,6 +261,52 @@ graph LR
 ````
 
 GitHub also renders mermaid natively. No special syntax needed.
+
+### Viewer-enhanced features for diagrams
+
+Our viewer adds several enhancements to mermaid diagrams. These are all automatic — no special syntax needed:
+
+**Click-to-expand:** Every diagram has an expand button (top-right corner on hover). Click the diagram or the button to open a fullscreen overlay with zoom controls (+/-, mouse wheel, fit-to-screen).
+
+**Click-to-section:** If a mermaid node's text matches a document heading, clicking that node scrolls to the corresponding section. This works automatically — just name your nodes to match your headings.
+
+Example: if your document has `## Intake` and your diagram has a node called `Intake`, clicking that node scrolls to the heading.
+
+```mermaid
+graph TD
+    Intake --> Classification --> Generation --> Delivery
+```
+
+**Auto-type detection:** The expand overlay shows the diagram type (Flowchart, Sequence Diagram, ER Diagram, etc.) in the title bar.
+
+### Making diagrams more readable
+
+Tips for mermaid diagrams that look good in the viewer:
+
+1. **Use subgraphs** for grouping related nodes:
+```mermaid
+graph TD
+    subgraph Frontend
+        A[Web App]
+        B[Mobile]
+    end
+    subgraph Backend
+        C[API]
+        D[Workers]
+    end
+    A --> C
+    B --> C
+    C --> D
+```
+
+2. **Use LR (left-to-right) for pipelines**, TD (top-down) for hierarchies:
+```markdown
+graph LR  ← for pipelines, flows
+graph TD  ← for hierarchies, trees
+```
+
+3. **Keep node labels short** — long labels make diagrams cramped
+4. **Use styled nodes** for visual hierarchy: `[regular]`, `(rounded)`, `{diamond}`, `[[subroutine]]`, `[(database)]`
 
 **If and only if the user has requested TTS/narration**, add a narrate comment before the block:
 
@@ -305,12 +431,18 @@ Main body organized with H2/H3 hierarchy.
 | Basic markdown | Full | Full | Full | Full |
 | GFM (tables, tasks) | Full | Full | Full | Full |
 | `<details>` collapse | Full | Full | Full | Full |
-| Mermaid | Full | Full | Plugin | Plugin |
+| Mermaid | Full + expand/zoom | Full | Plugin | Plugin |
 | KaTeX math | Full | Full | Plugin | Full |
+| Callout `[!NOTE]` etc. | Styled blocks | Styled | Blockquote | Plugin |
+| Custom `[!TLDR]` etc. | Styled blocks | Blockquote | Blockquote | Blockquote |
+| Frontmatter dashboard | Status/metrics | Hidden | Raw YAML | Hidden |
+| Abbreviation tooltips | Hover tooltips | No | No | No |
+| Section minimap | Auto (3+ H2s) | No | No | No |
 | `<!-- narrate: -->` | **TTS audio** | Hidden | Hidden | Hidden |
 | Heading fold | Auto | No | No | Plugin |
 | Link type detection | Auto | No | No | No |
 | Link cards | Auto | No | No | No |
+| Diagram click-to-section | Auto | No | No | No |
 | Footnotes | Full | Full | Plugin | Full |
 | `==highlight==` | Full | No | No | Full |
 | `~sub~` / `^sup^` | Full | No | No | Full |
