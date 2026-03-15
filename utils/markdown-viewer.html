@@ -906,6 +906,126 @@ body {
   transition: transform 0.15s ease;
 }
 
+/* ===== Frontmatter Dashboard ===== */
+.fm-dashboard {
+  margin-bottom: 1.5em; padding: 14px 18px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-lg);
+  font-family: var(--font-ui);
+}
+.fm-top-row {
+  display: flex; align-items: center; gap: 10px;
+  flex-wrap: wrap; margin-bottom: 10px;
+}
+.fm-status-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 10px; border-radius: 12px;
+  font-size: 0.72rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.04em;
+}
+.fm-status-badge.shipped { background: #d4edda; color: #155724; }
+.fm-status-badge.in-progress { background: #fff3cd; color: #856404; }
+.fm-status-badge.blocked { background: #f8d7da; color: #721c24; }
+.fm-status-badge.draft { background: var(--bg-tertiary); color: var(--text-tertiary); }
+[data-theme="dark"] .fm-status-badge.shipped { background: #1a3a2a; color: #7fb589; }
+[data-theme="dark"] .fm-status-badge.in-progress { background: #3a3020; color: #d9a05b; }
+[data-theme="dark"] .fm-status-badge.blocked { background: #3a1a1a; color: #d47b78; }
+.fm-date { font-size: 0.72rem; color: var(--text-tertiary); }
+.fm-metrics {
+  display: flex; gap: 8px; flex-wrap: wrap;
+}
+.fm-metric {
+  padding: 8px 12px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-sm);
+  text-align: center; min-width: 70px;
+}
+.fm-metric-value {
+  font-size: 1.15rem; font-weight: 700; color: var(--text-primary);
+  display: block; line-height: 1.2;
+}
+.fm-metric-label {
+  font-size: 0.62rem; font-weight: 500; color: var(--text-tertiary);
+  text-transform: uppercase; letter-spacing: 0.04em;
+  display: block; margin-top: 2px;
+}
+.fm-repos {
+  display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px;
+}
+.fm-repo-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 8px; border-radius: 4px;
+  background: var(--bg-primary); border: 1px solid var(--border-secondary);
+  font-size: 0.7rem; color: var(--text-link);
+  text-decoration: none; transition: all var(--transition-fast);
+}
+.fm-repo-badge:hover { border-color: var(--border-accent); background: var(--bg-hover); }
+
+/* ===== GitHub-style Callout Blocks ===== */
+.md-body .callout {
+  margin: 1.2em 0; padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  border-left: 4px solid;
+  font-size: 0.92em;
+}
+.md-body .callout > p:first-child { margin-top: 0; }
+.md-body .callout > p:last-child { margin-bottom: 0; }
+.md-body .callout-title {
+  font-family: var(--font-ui); font-weight: 600;
+  font-size: 0.82rem; display: flex; align-items: center; gap: 6px;
+  margin-bottom: 6px;
+}
+.md-body .callout-note      { border-color: #4A90D9; background: rgba(74,144,217,0.06); }
+.md-body .callout-note .callout-title { color: #4A90D9; }
+.md-body .callout-tip        { border-color: #3CA55C; background: rgba(60,165,92,0.06); }
+.md-body .callout-tip .callout-title { color: #3CA55C; }
+.md-body .callout-important  { border-color: #8B5CF6; background: rgba(139,92,246,0.06); }
+.md-body .callout-important .callout-title { color: #8B5CF6; }
+.md-body .callout-warning    { border-color: #D97706; background: rgba(217,119,6,0.06); }
+.md-body .callout-warning .callout-title { color: #D97706; }
+.md-body .callout-caution    { border-color: #DC2626; background: rgba(220,38,38,0.06); }
+.md-body .callout-caution .callout-title { color: #DC2626; }
+.md-body .callout-tldr       { border-color: #0891B2; background: rgba(8,145,178,0.06); }
+.md-body .callout-tldr .callout-title { color: #0891B2; }
+.md-body .callout-decision   { border-color: #7C3AED; background: rgba(124,58,237,0.06); }
+.md-body .callout-decision .callout-title { color: #7C3AED; }
+.md-body .callout-cost       { border-color: #EA580C; background: rgba(234,88,12,0.06); }
+.md-body .callout-cost .callout-title { color: #EA580C; }
+
+[data-theme="dark"] .md-body .callout { background: color-mix(in srgb, var(--bg-secondary) 80%, transparent); }
+
+/* ===== Abbreviation Tooltips ===== */
+.abbr-tooltip {
+  border-bottom: 1px dotted var(--text-tertiary);
+  cursor: help;
+  text-decoration: none;
+}
+
+/* ===== Section Minimap ===== */
+.section-minimap {
+  display: flex; gap: 2px; align-items: stretch;
+  margin-bottom: 1.5em; padding: 0;
+  height: 28px; border-radius: var(--radius-sm);
+  overflow: hidden; border: 1px solid var(--border-secondary);
+  background: var(--bg-secondary);
+}
+.minimap-segment {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  font-size: 0.58rem; font-weight: 500; font-family: var(--font-ui);
+  color: var(--text-tertiary);
+  text-transform: uppercase; letter-spacing: 0.02em;
+  cursor: pointer; border: none; background: transparent;
+  padding: 0 4px; white-space: nowrap; overflow: hidden;
+  text-overflow: ellipsis;
+  transition: all var(--transition-fast);
+}
+.minimap-segment:hover { background: var(--bg-hover); color: var(--text-primary); }
+.minimap-segment.active {
+  background: var(--accent); color: #fff;
+}
+
 /* ===== FABs ===== */
 .fab-container {
   position: fixed; bottom: 20px; right: 20px;
@@ -1632,19 +1752,104 @@ async function loadFromUrl() {
 // ============================================
 // Render markdown
 // ============================================
-function stripFrontmatter(src) {
-  // Strip YAML frontmatter: starts with --- on first line, ends with --- or ...
+function parseFrontmatter(src) {
   const match = src.match(/^---\s*\n([\s\S]*?)\n---\s*\n/);
-  if (match) return src.slice(match[0].length);
-  return src;
+  if (!match) return { body: src, meta: null };
+  const yamlStr = match[1];
+  const body = src.slice(match[0].length);
+
+  // Simple YAML parser for our structured frontmatter
+  const meta = {};
+  let currentKey = null;
+  let currentList = null;
+  let currentItem = null;
+
+  for (const line of yamlStr.split('\n')) {
+    const topMatch = line.match(/^(\w[\w-]*):\s*(.*)/);
+    const listItemMatch = line.match(/^\s+-\s+(.*)/);
+    const nestedKvMatch = line.match(/^\s+(\w[\w-]*):\s*(.*)/);
+
+    if (topMatch && !line.startsWith(' ')) {
+      currentKey = topMatch[1];
+      const val = topMatch[2].replace(/^["']|["']$/g, '').trim();
+      if (val) {
+        meta[currentKey] = val;
+        currentList = null;
+      } else {
+        meta[currentKey] = [];
+        currentList = meta[currentKey];
+        currentItem = null;
+      }
+    } else if (listItemMatch && currentList !== null) {
+      const val = listItemMatch[1].trim();
+      // Check if it's "key: value" format
+      const kvMatch = val.match(/^(\w[\w-]*):\s*(.*)/);
+      if (kvMatch) {
+        currentItem = {};
+        currentItem[kvMatch[1]] = kvMatch[2].replace(/^["']|["']$/g, '').trim();
+        currentList.push(currentItem);
+      } else {
+        currentList.push(val.replace(/^["']|["']$/g, ''));
+        currentItem = null;
+      }
+    } else if (nestedKvMatch && currentItem) {
+      currentItem[nestedKvMatch[1]] = nestedKvMatch[2].replace(/^["']|["']$/g, '').trim();
+    }
+  }
+  return { body, meta };
+}
+
+function renderFrontmatterDashboard(meta) {
+  if (!meta) return '';
+  const status = meta.status || '';
+  const date = meta.date || '';
+  const metrics = Array.isArray(meta.metrics) ? meta.metrics : [];
+  const repos = Array.isArray(meta.repos) ? meta.repos : [];
+  const abbrs = meta.abbreviations;
+
+  if (!status && !metrics.length && !repos.length) return '';
+
+  const statusClass = status.toLowerCase().replace(/[^a-z-]/g, '').replace('in-progress', 'in-progress') || 'draft';
+  const statusNorm = statusClass.includes('ship') ? 'shipped' : statusClass.includes('progress') ? 'in-progress' : statusClass.includes('block') ? 'blocked' : 'draft';
+  const dot = statusNorm === 'shipped' ? '&#9679;' : statusNorm === 'in-progress' ? '&#9675;' : statusNorm === 'blocked' ? '&#9679;' : '&#9675;';
+
+  let html = '<div class="fm-dashboard"><div class="fm-top-row">';
+  if (status) html += `<span class="fm-status-badge ${statusNorm}">${dot} ${escapeHtml(status)}</span>`;
+  if (date) html += `<span class="fm-date">${escapeHtml(date)}</span>`;
+  html += '</div>';
+
+  if (metrics.length) {
+    html += '<div class="fm-metrics">';
+    for (const m of metrics) {
+      html += `<div class="fm-metric"><span class="fm-metric-value">${escapeHtml(m.value || '')}</span><span class="fm-metric-label">${escapeHtml(m.label || '')}</span></div>`;
+    }
+    html += '</div>';
+  }
+
+  if (repos.length) {
+    html += '<div class="fm-repos">';
+    for (const r of repos) {
+      if (r.github) {
+        html += `<a class="fm-repo-badge" href="${escapeHtml(r.github)}" target="_blank" rel="noopener">&#9733; ${escapeHtml(r.name || 'repo')}</a>`;
+      } else {
+        html += `<span class="fm-repo-badge">${escapeHtml(r.name || 'repo')}</span>`;
+      }
+    }
+    html += '</div>';
+  }
+
+  html += '</div>';
+  return html;
 }
 
 function renderMarkdown(source, title) {
   const body = document.getElementById('mdBody');
   const welcome = document.getElementById('welcomeScreen');
 
-  // Strip YAML frontmatter
-  source = stripFrontmatter(source);
+  // Parse and strip YAML frontmatter
+  const { body: stripped, meta } = parseFrontmatter(source);
+  source = stripped;
+  window._frontmatter = meta;
 
   // Extract narrations before rendering
   const { narrations } = extractNarrations(source);
@@ -1654,7 +1859,8 @@ function renderMarkdown(source, title) {
   const processed = renderMath(source);
 
   // Render
-  body.innerHTML = md.render(processed);
+  const dashboardHtml = renderFrontmatterDashboard(meta);
+  body.innerHTML = dashboardHtml + md.render(processed);
   body.style.display = 'block';
   welcome.style.display = 'none';
   document.getElementById('fabContainer').style.display = 'flex';
@@ -1674,16 +1880,20 @@ function renderMarkdown(source, title) {
   document.getElementById('readingMeta').textContent = `${words.toLocaleString()} words ~ ${mins} min read`;
 
   // Post-process (each wrapped so one failure doesn't block the rest)
+  try { transformCalloutBlocks(); } catch(e) { console.warn('callouts:', e); }
   try { addSectionToggles(); } catch(e) { console.warn('addSectionToggles:', e); }
   try { buildToc(); } catch(e) { console.warn('buildToc:', e); }
+  try { buildSectionMinimap(); } catch(e) { console.warn('minimap:', e); }
   try { buildSearchIndex(); } catch(e) { console.warn('buildSearchIndex:', e); }
   try { buildTtsSections(); } catch(e) { console.warn('buildTtsSections:', e); }
   try { renderMermaidDiagrams(); } catch(e) { console.warn('renderMermaidDiagrams:', e); }
   try { setupScrollSpy(); } catch(e) { console.warn('setupScrollSpy:', e); }
   try { setupImageLightbox(); } catch(e) { console.warn('setupImageLightbox:', e); }
   try { enhanceLinks(); } catch(e) { console.warn('enhanceLinks:', e); }
+  try { applyAbbreviationTooltips(meta); } catch(e) { console.warn('abbreviations:', e); }
+  try { setupMermaidClickToSection(); } catch(e) { console.warn('mermaidClick:', e); }
 
-  // Show link-related toolbar buttons
+  // Show toolbar buttons
   try { document.getElementById('linksPanelBtn').style.display = ''; } catch(e) {}
 
   // Reset state
@@ -1948,7 +2158,8 @@ let diagramZoomLevel = 100;
 let diagramFitMode = true;
 
 function openDiagramOverlay(wrapper) {
-  const svgEl = wrapper.querySelector('svg');
+  // Find the mermaid SVG, not the expand button's icon SVG
+  const svgEl = wrapper.querySelector('.mermaid svg') || wrapper.querySelector('pre svg');
   if (!svgEl) return;
 
   const overlay = document.getElementById('diagramOverlay');
@@ -2271,6 +2482,170 @@ function copyCode(btn) {
   navigator.clipboard.writeText(code.textContent).then(() => {
     btn.textContent = 'Copied!'; btn.classList.add('copied');
     setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1500);
+  });
+}
+
+// ============================================
+// ============================================
+// GitHub-style Callout Blocks
+// Transforms > [!NOTE], > [!WARNING], etc.
+// ============================================
+const CALLOUT_TYPES = {
+  NOTE:      { icon: 'ℹ',  label: 'Note' },
+  TIP:       { icon: '💡', label: 'Tip' },
+  IMPORTANT: { icon: '❗', label: 'Important' },
+  WARNING:   { icon: '⚠',  label: 'Warning' },
+  CAUTION:   { icon: '🔴', label: 'Caution' },
+  TLDR:      { icon: '📌', label: 'TL;DR' },
+  DECISION:  { icon: '🏛',  label: 'Decision' },
+  COST:      { icon: '💰', label: 'Cost' },
+};
+
+function transformCalloutBlocks() {
+  const body = document.getElementById('mdBody');
+  body.querySelectorAll('blockquote').forEach(bq => {
+    const firstP = bq.querySelector('p');
+    if (!firstP) return;
+    const text = firstP.innerHTML;
+    const match = text.match(/^\[!(\w+)\]\s*/);
+    if (!match) return;
+    const type = match[1].toUpperCase();
+    const info = CALLOUT_TYPES[type];
+    if (!info) return;
+
+    // Remove the [!TYPE] marker from text
+    firstP.innerHTML = text.replace(/^\[!\w+\]\s*/, '');
+
+    // Convert blockquote to callout
+    bq.className = `callout callout-${type.toLowerCase()}`;
+    const title = document.createElement('div');
+    title.className = 'callout-title';
+    title.innerHTML = `${info.icon} ${info.label}`;
+    bq.insertBefore(title, bq.firstChild);
+  });
+}
+
+// ============================================
+// Section Minimap
+// ============================================
+function buildSectionMinimap() {
+  const body = document.getElementById('mdBody');
+  const h2s = body.querySelectorAll('h2');
+  if (h2s.length < 3) return; // Only show for docs with 3+ sections
+
+  const minimap = document.createElement('div');
+  minimap.className = 'section-minimap';
+
+  h2s.forEach(h => {
+    const btn = document.createElement('button');
+    btn.className = 'minimap-segment';
+    btn.textContent = h.textContent.replace(/#/g, '').trim();
+    btn.dataset.targetId = h.id;
+    btn.onclick = () => h.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    minimap.appendChild(btn);
+  });
+
+  // Insert after first h1 or at top
+  const h1 = body.querySelector('h1');
+  const dashboard = body.querySelector('.fm-dashboard');
+  const insertAfter = dashboard || h1;
+  if (insertAfter && insertAfter.nextSibling) {
+    insertAfter.parentNode.insertBefore(minimap, insertAfter.nextSibling);
+  } else {
+    body.insertBefore(minimap, body.firstChild);
+  }
+
+  // Update minimap on scroll
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        minimap.querySelectorAll('.minimap-segment').forEach(seg => {
+          seg.classList.toggle('active', seg.dataset.targetId === entry.target.id);
+        });
+      }
+    });
+  }, { rootMargin: '-80px 0px -70% 0px', threshold: 0 });
+
+  h2s.forEach(h => observer.observe(h));
+}
+
+// ============================================
+// Abbreviation Tooltips from frontmatter
+// ============================================
+function applyAbbreviationTooltips(meta) {
+  if (!meta || !meta.abbreviations) return;
+  const abbrs = meta.abbreviations;
+  if (typeof abbrs !== 'object' || Array.isArray(abbrs)) return;
+
+  const body = document.getElementById('mdBody');
+  const walker = document.createTreeWalker(body, NodeFilter.SHOW_TEXT, {
+    acceptNode: (node) => {
+      // Skip code, pre, script elements
+      const parent = node.parentElement;
+      if (!parent) return NodeFilter.FILTER_REJECT;
+      if (['CODE', 'PRE', 'SCRIPT', 'STYLE'].includes(parent.tagName)) return NodeFilter.FILTER_REJECT;
+      if (parent.classList.contains('callout-title')) return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT;
+    }
+  });
+
+  const textNodes = [];
+  while (walker.nextNode()) textNodes.push(walker.currentNode);
+
+  // Sort abbreviation keys by length (longest first) to avoid partial matches
+  const keys = Object.keys(abbrs).sort((a, b) => b.length - a.length);
+  const pattern = new RegExp('\\b(' + keys.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')\\b', 'g');
+
+  for (const node of textNodes) {
+    const text = node.textContent;
+    if (!pattern.test(text)) continue;
+    pattern.lastIndex = 0;
+
+    const frag = document.createDocumentFragment();
+    let lastIdx = 0;
+    let m;
+    while ((m = pattern.exec(text)) !== null) {
+      if (m.index > lastIdx) frag.appendChild(document.createTextNode(text.slice(lastIdx, m.index)));
+      const abbr = document.createElement('abbr');
+      abbr.className = 'abbr-tooltip';
+      abbr.title = abbrs[m[1]];
+      abbr.textContent = m[1];
+      frag.appendChild(abbr);
+      lastIdx = m.index + m[0].length;
+    }
+    if (lastIdx < text.length) frag.appendChild(document.createTextNode(text.slice(lastIdx)));
+    if (lastIdx > 0) node.parentNode.replaceChild(frag, node);
+  }
+}
+
+// ============================================
+// Mermaid Click-to-Section
+// ============================================
+function setupMermaidClickToSection() {
+  const body = document.getElementById('mdBody');
+  const headings = body.querySelectorAll('h1,h2,h3,h4,h5,h6');
+  const slugMap = {};
+  headings.forEach(h => {
+    const slug = h.textContent.replace(/#/g, '').trim().toLowerCase().replace(/[^\w]+/g, '-').replace(/^-|-$/g, '');
+    slugMap[slug] = h;
+    // Also map simple words
+    const words = h.textContent.replace(/#/g, '').trim().toLowerCase().split(/\s+/);
+    words.forEach(w => { if (w.length > 3 && !slugMap[w]) slugMap[w] = h; });
+  });
+
+  body.querySelectorAll('.mermaid-wrapper svg .node, .mermaid-wrapper svg .nodeLabel, .mermaid-wrapper svg g[id]').forEach(node => {
+    const text = (node.textContent || '').trim().toLowerCase().replace(/[^\w]+/g, '-').replace(/^-|-$/g, '');
+    const target = slugMap[text];
+    if (target) {
+      node.style.cursor = 'pointer';
+      node.addEventListener('click', (e) => {
+        e.stopPropagation();
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // Flash highlight
+        target.style.background = 'var(--bg-tts-highlight)';
+        setTimeout(() => { target.style.background = ''; }, 2000);
+      });
+    }
   });
 }
 
