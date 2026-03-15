@@ -701,13 +701,16 @@ body {
 
 /* Blockquotes */
 .md-body blockquote {
-  margin: 1.1em 0; padding: 0.5em 1.1em;
+  margin: 1.2em 0; padding: 0.8em 1.2em;
   border-left: 3px solid var(--accent);
   background: var(--bg-secondary);
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   color: var(--text-secondary);
+  font-style: italic;
 }
 .md-body blockquote p:last-child { margin-bottom: 0; }
+.md-body blockquote code { font-style: normal; }
+.md-body blockquote blockquote { border-left-color: var(--accent-secondary); margin: 0.5em 0; }
 
 /* Inline code */
 .md-body code {
@@ -718,14 +721,16 @@ body {
 
 /* Code blocks */
 .md-body pre {
-  margin: 1.1em 0; border-radius: var(--radius-md);
+  margin: 1.2em 0; border-radius: var(--radius-md);
   overflow: hidden; background: var(--bg-code-block);
   border: 1px solid var(--border-secondary);
+  box-shadow: var(--shadow-xs);
 }
 .md-body pre code {
-  display: block; padding: 14px 18px; overflow-x: auto;
-  font-size: 0.83rem; line-height: 1.55;
+  display: block; padding: 16px 20px; overflow-x: auto;
+  font-size: 0.83rem; line-height: 1.6;
   background: none; color: var(--text-primary); border-radius: 0;
+  tab-size: 2;
 }
 
 .code-header {
@@ -748,18 +753,21 @@ body {
 
 /* Tables */
 .md-body table {
-  width: 100%; border-collapse: collapse; margin: 1.1em 0;
+  width: 100%; border-collapse: collapse; margin: 1.2em 0;
   font-size: 0.9em; display: block; overflow-x: auto;
+  border-radius: var(--radius-sm);
 }
 .md-body thead th {
   background: var(--bg-secondary); font-family: var(--font-ui);
   font-weight: 600; font-size: 0.78rem;
   text-transform: uppercase; letter-spacing: 0.03em;
   color: var(--text-secondary);
+  position: sticky; top: 0; z-index: 1;
 }
-.md-body th, .md-body td { padding: 9px 12px; border: 1px solid var(--border-secondary); text-align: left; }
-.md-body tbody tr:nth-child(even) { background: var(--bg-secondary); }
+.md-body th, .md-body td { padding: 10px 14px; border: 1px solid var(--border-secondary); text-align: left; }
+.md-body tbody tr:nth-child(even) { background: color-mix(in srgb, var(--bg-secondary) 50%, transparent); }
 .md-body tbody tr:hover { background: var(--bg-hover); }
+.md-body td code { font-size: 0.82em; }
 
 /* HR */
 .md-body hr { margin: 2em 0; border: none; height: 1px; background: var(--border-primary); }
@@ -809,11 +817,93 @@ body {
 .md-body mark { background: rgba(255,220,100,0.3); padding: 1px 3px; border-radius: 2px; }
 [data-theme="dark"] .md-body mark { background: rgba(255,220,100,0.12); }
 
-/* Mermaid */
+/* Mermaid diagrams */
 .mermaid-wrapper {
-  margin: 1.1em 0; padding: 18px;
-  background: var(--bg-card); border: 1px solid var(--border-secondary);
-  border-radius: var(--radius-md); overflow-x: auto; text-align: center;
+  position: relative;
+  margin: 1.4em 0; padding: 24px 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-lg);
+  overflow-x: auto; overflow-y: hidden;
+  text-align: center;
+  min-height: 80px;
+  box-shadow: var(--shadow-xs);
+  transition: box-shadow var(--transition-normal);
+}
+.mermaid-wrapper:hover { box-shadow: var(--shadow-sm); }
+
+/* Make mermaid SVGs fill width and scale properly */
+.mermaid-wrapper svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Expand button on diagrams */
+.diagram-expand-btn {
+  position: absolute; top: 8px; right: 8px;
+  width: 30px; height: 30px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-primary);
+  background: var(--bg-primary);
+  color: var(--text-tertiary);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0;
+  transition: all var(--transition-fast);
+  z-index: 2;
+}
+.mermaid-wrapper:hover .diagram-expand-btn { opacity: 0.7; }
+.diagram-expand-btn:hover { opacity: 1 !important; background: var(--bg-hover); color: var(--text-primary); }
+.diagram-expand-btn svg { width: 16px; height: 16px; }
+
+/* Diagram fullscreen overlay */
+.diagram-overlay {
+  position: fixed; inset: 0; z-index: 500;
+  background: var(--bg-primary);
+  display: none;
+  flex-direction: column;
+}
+.diagram-overlay.show { display: flex; }
+.diagram-overlay-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border-primary);
+  background: var(--bg-secondary);
+  flex-shrink: 0;
+}
+.diagram-overlay-header .diagram-title {
+  font-size: 0.82rem; font-weight: 500; color: var(--text-secondary);
+}
+.diagram-overlay-controls {
+  display: flex; gap: 6px; align-items: center;
+}
+.diagram-overlay-controls button {
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--border-primary); background: var(--bg-primary);
+  color: var(--text-secondary); border-radius: var(--radius-sm);
+  padding: 5px 10px; font-size: 0.78rem; font-family: var(--font-ui);
+  cursor: pointer; gap: 4px; transition: all var(--transition-fast);
+}
+.diagram-overlay-controls button:hover { background: var(--bg-hover); color: var(--text-primary); }
+.diagram-overlay-body {
+  flex: 1;
+  overflow: auto;
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.diagram-overlay-body svg {
+  max-width: none; /* Allow full size in expanded view */
+  transition: transform 0.2s ease;
+}
+.diagram-overlay-body.fit svg {
+  max-width: 95vw;
+  max-height: calc(100vh - 80px);
+}
+
+/* Pinch/scroll zoom in overlay */
+.diagram-zoom-container {
+  transform-origin: center center;
+  transition: transform 0.15s ease;
 }
 
 /* ===== FABs ===== */
@@ -1138,6 +1228,23 @@ body.focus-mode .md-body .section-content > .tts-active {
 <!-- Image lightbox -->
 <div class="lightbox" id="lightbox" onclick="closeLightbox()">
   <img id="lightboxImg" src="" alt="">
+</div>
+
+<!-- Diagram expanded view -->
+<div class="diagram-overlay" id="diagramOverlay">
+  <div class="diagram-overlay-header">
+    <span class="diagram-title" id="diagramTitle">Diagram</span>
+    <div class="diagram-overlay-controls">
+      <button onclick="diagramZoom(-1)" title="Zoom out">&#8722;</button>
+      <span id="diagramZoomLabel" style="font-size:0.72rem;color:var(--text-tertiary);min-width:36px;text-align:center">100%</span>
+      <button onclick="diagramZoom(1)" title="Zoom in">+</button>
+      <button onclick="diagramFitToggle()" id="diagramFitBtn" title="Fit to screen">Fit</button>
+      <button onclick="closeDiagramOverlay()" title="Close (Esc)">&times; Close</button>
+    </div>
+  </div>
+  <div class="diagram-overlay-body fit" id="diagramBody">
+    <div class="diagram-zoom-container" id="diagramZoomContainer"></div>
+  </div>
 </div>
 
 <!-- Link tooltip -->
@@ -1602,6 +1709,21 @@ async function renderMermaidDiagrams() {
       const { svg } = await mermaid.render(id + '-svg', code);
       el.innerHTML = svg;
       el.classList.add('rendered');
+
+      // Add expand button to wrapper
+      const wrapper = el.closest('.mermaid-wrapper');
+      if (wrapper && !wrapper.querySelector('.diagram-expand-btn')) {
+        const btn = document.createElement('button');
+        btn.className = 'diagram-expand-btn';
+        btn.title = 'Expand diagram';
+        btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>';
+        btn.onclick = (e) => { e.stopPropagation(); openDiagramOverlay(wrapper); };
+        wrapper.prepend(btn);
+
+        // Also allow clicking the diagram itself to expand
+        wrapper.style.cursor = 'pointer';
+        wrapper.addEventListener('click', () => openDiagramOverlay(wrapper));
+      }
     } catch (err) {
       el.innerHTML = `<pre style="color:var(--accent-danger);font-size:0.82rem">Mermaid error: ${escapeHtml(err.message)}</pre>`;
     }
@@ -1818,6 +1940,97 @@ function setupImageLightbox() {
   });
 }
 function closeLightbox() { document.getElementById('lightbox').classList.remove('show'); }
+
+// ============================================
+// Diagram expanded view
+// ============================================
+let diagramZoomLevel = 100;
+let diagramFitMode = true;
+
+function openDiagramOverlay(wrapper) {
+  const svgEl = wrapper.querySelector('svg');
+  if (!svgEl) return;
+
+  const overlay = document.getElementById('diagramOverlay');
+  const container = document.getElementById('diagramZoomContainer');
+  const body = document.getElementById('diagramBody');
+
+  // Clone the SVG into the overlay
+  container.innerHTML = '';
+  const clone = svgEl.cloneNode(true);
+  clone.removeAttribute('style');
+  clone.style.width = '100%';
+  clone.style.height = 'auto';
+  container.appendChild(clone);
+
+  // Reset zoom
+  diagramZoomLevel = 100;
+  diagramFitMode = true;
+  body.classList.add('fit');
+  container.style.transform = '';
+  document.getElementById('diagramZoomLabel').textContent = '100%';
+
+  // Detect diagram type for title
+  const mermaidEl = wrapper.querySelector('.mermaid');
+  let type = 'Diagram';
+  if (mermaidEl) {
+    const raw = mermaidEl.textContent || '';
+    if (/sequenceDiagram/i.test(raw)) type = 'Sequence Diagram';
+    else if (/graph\s+(TD|TB|LR|RL|BT)/i.test(raw)) type = 'Flowchart';
+    else if (/classDiagram/i.test(raw)) type = 'Class Diagram';
+    else if (/gantt/i.test(raw)) type = 'Gantt Chart';
+    else if (/pie/i.test(raw)) type = 'Pie Chart';
+    else if (/erDiagram/i.test(raw)) type = 'ER Diagram';
+    else if (/stateDiagram/i.test(raw)) type = 'State Diagram';
+  }
+  document.getElementById('diagramTitle').textContent = type;
+
+  overlay.classList.add('show');
+}
+
+function closeDiagramOverlay() {
+  document.getElementById('diagramOverlay').classList.remove('show');
+}
+
+function diagramZoom(dir) {
+  diagramFitMode = false;
+  document.getElementById('diagramBody').classList.remove('fit');
+  diagramZoomLevel = Math.max(25, Math.min(400, diagramZoomLevel + dir * 25));
+  document.getElementById('diagramZoomContainer').style.transform = `scale(${diagramZoomLevel / 100})`;
+  document.getElementById('diagramZoomLabel').textContent = diagramZoomLevel + '%';
+}
+
+function diagramFitToggle() {
+  diagramFitMode = !diagramFitMode;
+  const body = document.getElementById('diagramBody');
+  const container = document.getElementById('diagramZoomContainer');
+  if (diagramFitMode) {
+    body.classList.add('fit');
+    container.style.transform = '';
+    diagramZoomLevel = 100;
+    document.getElementById('diagramZoomLabel').textContent = 'Fit';
+  } else {
+    body.classList.remove('fit');
+    container.style.transform = 'scale(1)';
+    diagramZoomLevel = 100;
+    document.getElementById('diagramZoomLabel').textContent = '100%';
+  }
+}
+
+// Keyboard: Esc closes diagram overlay
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && document.getElementById('diagramOverlay').classList.contains('show')) {
+    closeDiagramOverlay();
+    e.stopPropagation();
+  }
+});
+
+// Mouse wheel zoom in diagram overlay
+document.getElementById('diagramBody').addEventListener('wheel', (e) => {
+  if (!document.getElementById('diagramOverlay').classList.contains('show')) return;
+  e.preventDefault();
+  diagramZoom(e.deltaY < 0 ? 1 : -1);
+}, { passive: false });
 
 // ============================================
 // Link enhancement
