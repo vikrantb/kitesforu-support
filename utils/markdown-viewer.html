@@ -1103,7 +1103,7 @@ body.focus-mode .md-body .section-content > .tts-active {
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
       <span class="lbl">Open</span>
     </button>
-    <input type="file" id="fileInput" accept=".md,.markdown,.mdx,.txt,.text" style="display:none" onchange="handleFileInput(event)">
+    <input type="file" id="fileInput" accept="text/*,.md,.markdown,.mdx" style="display:none" onchange="handleFileInput(event)">
   </div>
 </div>
 
@@ -1409,19 +1409,26 @@ function saveBasePath() {
 // File handling
 // ============================================
 function handleFileInput(e) {
-  const file = e.target.files[0];
-  if (file) readFile(file);
+  const files = e.target.files;
+  if (!files || !files.length) return;
+  const file = files[0];
+  readFile(file);
   // Reset so the same file can be picked again
-  e.target.value = '';
+  try { e.target.value = ''; } catch(_) { e.target.type = ''; e.target.type = 'file'; }
 }
 
 function readFile(file) {
   const reader = new FileReader();
-  reader.onload = (e) => {
-    rawMarkdown = e.target.result;
-    currentFileName = file.name;
-    renderMarkdown(rawMarkdown, file.name);
-    updateUrl(file.name);
+  reader.onload = (ev) => {
+    try {
+      rawMarkdown = ev.target.result;
+      currentFileName = file.name;
+      renderMarkdown(rawMarkdown, file.name);
+      updateUrl(file.name);
+    } catch (err) {
+      console.error('Render error:', err);
+      alert('Error rendering file: ' + err.message);
+    }
   };
   reader.onerror = () => {
     console.error('Failed to read file:', file.name);
@@ -1576,18 +1583,18 @@ function renderMarkdown(source, title) {
   const mins = Math.max(1, Math.ceil(words / 230));
   document.getElementById('readingMeta').textContent = `${words.toLocaleString()} words ~ ${mins} min read`;
 
-  // Post-process
-  addSectionToggles();
-  buildToc();
-  buildSearchIndex();
-  buildTtsSections();
-  renderMermaidDiagrams();
-  setupScrollSpy();
-  setupImageLightbox();
-  enhanceLinks();
+  // Post-process (each wrapped so one failure doesn't block the rest)
+  try { addSectionToggles(); } catch(e) { console.warn('addSectionToggles:', e); }
+  try { buildToc(); } catch(e) { console.warn('buildToc:', e); }
+  try { buildSearchIndex(); } catch(e) { console.warn('buildSearchIndex:', e); }
+  try { buildTtsSections(); } catch(e) { console.warn('buildTtsSections:', e); }
+  try { renderMermaidDiagrams(); } catch(e) { console.warn('renderMermaidDiagrams:', e); }
+  try { setupScrollSpy(); } catch(e) { console.warn('setupScrollSpy:', e); }
+  try { setupImageLightbox(); } catch(e) { console.warn('setupImageLightbox:', e); }
+  try { enhanceLinks(); } catch(e) { console.warn('enhanceLinks:', e); }
 
   // Show link-related toolbar buttons
-  document.getElementById('linksPanelBtn').style.display = '';
+  try { document.getElementById('linksPanelBtn').style.display = ''; } catch(e) {}
 
   // Reset state
   allCollapsed = false;
