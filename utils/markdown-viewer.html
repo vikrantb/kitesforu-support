@@ -528,36 +528,40 @@ body {
 .md-body a.header-anchor {
   text-decoration: none; background: none; padding: 0; margin: 0;
 }
-.md-body a.header-anchor::after,
-.md-body a.header-anchor .link-icon { display: none !important; }
+.md-body a.header-anchor::after { display: none !important; }
 
-/* Link type icons — inline SVG via background */
-.md-body a .link-icon {
-  display: inline-block; width: 13px; height: 13px;
-  margin-left: 3px; vertical-align: -1px;
-  opacity: 0.45; flex-shrink: 0;
-  transition: opacity var(--transition-fast);
+/* Link type icons via CSS ::after — no DOM injection, no text flow breakage */
+.md-body a[data-link-type="external"]::after { content: '\2009\2197'; }
+.md-body a[data-link-type="github"]::after { content: '\2009\2606'; }
+.md-body a[data-link-type="npm"]::after { content: '\2009\25CB'; }
+.md-body a[data-link-type="docs"]::after { content: '\2009\2197'; }
+.md-body a[data-link-type="email"]::after { content: '\2009\2709'; }
+.md-body a[data-link-type="file"]::after { content: '\2009\2192'; }
+.md-body a[data-link-type]::after {
+  font-size: 0.7em; opacity: 0.35; text-decoration: none;
 }
-.md-body a:hover .link-icon { opacity: 0.7; }
+.md-body a[data-link-type]:hover::after { opacity: 0.6; }
+/* No icon for anchor links */
+.md-body a[data-link-type="anchor"]::after { content: none; }
 
 /* Internal anchor links (same-page) */
-.md-body a[href^="#"]:not(.header-anchor) {
+.md-body a[data-link-type="anchor"] {
   text-decoration-style: dotted;
   text-decoration-color: color-mix(in srgb, var(--accent) 50%, transparent);
   color: var(--accent);
 }
-.md-body a[href^="#"]:not(.header-anchor):hover {
+.md-body a[data-link-type="anchor"]:hover {
   color: var(--accent-hover);
   text-decoration-color: var(--accent-hover);
   background: color-mix(in srgb, var(--accent) 8%, transparent);
 }
 
 /* Mailto links */
-.md-body a[href^="mailto"] {
+.md-body a[data-link-type="email"] {
   color: var(--accent-warn);
   text-decoration-color: color-mix(in srgb, var(--accent-warn) 35%, transparent);
 }
-.md-body a[href^="mailto"]:hover {
+.md-body a[data-link-type="email"]:hover {
   color: var(--accent-warn);
   text-decoration-color: var(--accent-warn);
   background: color-mix(in srgb, var(--accent-warn) 8%, transparent);
@@ -1407,6 +1411,8 @@ function saveBasePath() {
 function handleFileInput(e) {
   const file = e.target.files[0];
   if (file) readFile(file);
+  // Reset so the same file can be picked again
+  e.target.value = '';
 }
 
 function readFile(file) {
@@ -1416,6 +1422,10 @@ function readFile(file) {
     currentFileName = file.name;
     renderMarkdown(rawMarkdown, file.name);
     updateUrl(file.name);
+  };
+  reader.onerror = () => {
+    console.error('Failed to read file:', file.name);
+    alert('Failed to read file: ' + file.name);
   };
   reader.readAsText(file);
 }
@@ -1459,34 +1469,85 @@ async function loadFromUrl() {
     return;
   }
 
-  // Resolve path: try relative to server root, then with basepath
-  const basePath = localStorage.getItem('mdv-basepath') || '';
-  const pathsToTry = [filePath];
-  if (basePath) pathsToTry.push(basePath + filePath);
+  const isFileProtocol = window.location.protocol === 'file:';
 
-  for (const p of pathsToTry) {
-    try {
-      const resp = await fetch(p);
-      if (resp.ok) {
-        rawMarkdown = await resp.text();
-        currentFileName = filePath.split('/').pop();
-        renderMarkdown(rawMarkdown, filePath);
-        return;
-      }
-    } catch (_) {}
+  // If running on a server (http/https), try to fetch the file
+  if (!isFileProtocol) {
+    const basePath = localStorage.getItem('mdv-basepath') || '';
+    const pathsToTry = [filePath];
+    if (basePath) pathsToTry.push(basePath + filePath);
+
+    for (const p of pathsToTry) {
+      try {
+        const resp = await fetch(p);
+        if (resp.ok) {
+          rawMarkdown = await resp.text();
+          currentFileName = filePath.split('/').pop();
+          renderMarkdown(rawMarkdown, filePath);
+          return;
+        }
+      } catch (_) {}
+    }
   }
 
-  // Could not fetch - show the path in title so user knows which file to open
-  document.getElementById('titleText').textContent = filePath.split('/').pop();
+  // Can't fetch (file:// or server path not found) — show helpful UI
+  const fileName = filePath.split('/').pop();
+  document.getElementById('titleText').textContent = fileName;
   document.getElementById('breadcrumb').textContent = filePath;
+
+  // Replace welcome screen with a helpful "open this file" prompt
+  const welcome = document.getElementById('welcomeScreen');
+  welcome.innerHTML = `
+    <div class="drop-zone" id="dropZone2" style="max-width:560px">
+      <div class="drop-zone-icon">&#128196;</div>
+      <div class="drop-zone-title" style="margin-bottom:8px">Open: ${escapeHtml(fileName)}</div>
+      <div class="drop-zone-sub" style="margin-bottom:4px;font-family:var(--font-mono);font-size:0.75rem;color:var(--text-tertiary);word-break:break-all">${escapeHtml(filePath)}</div>
+      <div class="drop-zone-sub" style="margin-bottom:16px">
+        ${isFileProtocol
+          ? 'Cannot auto-load from <code>file://</code>. Drag the file here, browse to it, or serve via a local server.'
+          : 'File not found on server. Drag the file here or browse to it.'}
+      </div>
+      <button class="drop-btn" onclick="event.stopPropagation(); document.getElementById('fileInput').click()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+        Browse to ${escapeHtml(fileName)}
+      </button>
+      <div class="drop-or">or drag & drop the file here</div>
+      ${isFileProtocol ? `<div style="margin-top:14px;padding:10px 14px;background:var(--bg-tertiary);border-radius:var(--radius-sm);text-align:left">
+        <div style="font-size:0.72rem;font-weight:600;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:4px">To enable auto-loading, serve from workspace root:</div>
+        <code style="font-size:0.78rem;display:block;padding:6px 8px;background:var(--bg-code);border-radius:4px;word-break:break-all">cd /Users/vikrantbhosale/gitprojects/kitesforu && python3 -m http.server 8080</code>
+        <div style="font-size:0.7rem;color:var(--text-tertiary);margin-top:4px">Then open: <code style="font-size:0.7rem">http://localhost:8080/kitesforu-support/utils/markdown-viewer.html?file=${escapeHtml(filePath)}</code></div>
+      </div>` : ''}
+    </div>
+  `;
+
+  // Re-bind drag & drop on the new drop zone
+  const dz2 = document.getElementById('dropZone2');
+  if (dz2) {
+    ['dragenter','dragover'].forEach(evt => {
+      dz2.addEventListener(evt, e => { e.preventDefault(); dz2.classList.add('drag-over'); });
+    });
+    ['dragleave','drop'].forEach(evt => {
+      dz2.addEventListener(evt, () => dz2.classList.remove('drag-over'));
+    });
+  }
 }
 
 // ============================================
 // Render markdown
 // ============================================
+function stripFrontmatter(src) {
+  // Strip YAML frontmatter: starts with --- on first line, ends with --- or ...
+  const match = src.match(/^---\s*\n([\s\S]*?)\n---\s*\n/);
+  if (match) return src.slice(match[0].length);
+  return src;
+}
+
 function renderMarkdown(source, title) {
   const body = document.getElementById('mdBody');
   const welcome = document.getElementById('welcomeScreen');
+
+  // Strip YAML frontmatter
+  source = stripFrontmatter(source);
 
   // Extract narrations before rendering
   const { narrations } = extractNarrations(source);
@@ -1798,19 +1859,9 @@ function enhanceLinks() {
   body.querySelectorAll('a:not(.header-anchor)').forEach(a => {
     const href = a.getAttribute('href') || '';
     const type = detectLinkType(href);
-    const info = LINK_TYPES[type];
 
-    // Add type as data attribute
+    // Set data attribute — CSS handles the icon via ::after (no DOM injection)
     a.dataset.linkType = type;
-
-    // Add small inline icon
-    if (type !== 'anchor') {
-      const icon = document.createElement('span');
-      icon.className = 'link-icon';
-      icon.innerHTML = info.icon;
-      icon.style.color = info.color;
-      a.appendChild(icon);
-    }
 
     // External links: open in new tab
     if (type !== 'anchor' && type !== 'file' && href.startsWith('http')) {
@@ -1819,12 +1870,11 @@ function enhanceLinks() {
     }
 
     // Collect for links panel
-    allLinks.push({ href, text: a.textContent.replace(/[^\w\s.-]/g, '').trim(), type, element: a });
+    allLinks.push({ href, text: a.textContent.trim(), type, element: a });
 
     // Tooltip on hover
     a.addEventListener('mouseenter', (e) => showLinkTooltip(e, a, href, type));
     a.addEventListener('mouseleave', hideLinkTooltip);
-    a.addEventListener('mousemove', moveLinkTooltip);
   });
 
   // Convert standalone links (sole child of a <p>) into link chips
@@ -1856,7 +1906,7 @@ function enhanceLinks() {
 
       const chipTitle = document.createElement('span');
       chipTitle.className = 'link-chip-title';
-      chipTitle.textContent = a.textContent.replace(/[&#\d;]+$/g, '').trim() || href;
+      chipTitle.textContent = a.textContent.trim() || href;
 
       const chipUrl = document.createElement('span');
       chipUrl.className = 'link-chip-url';
@@ -1916,10 +1966,6 @@ function showLinkTooltip(e, anchor, href, type) {
   tt.style.left = Math.min(rect.left, window.innerWidth - 420) + 'px';
   tt.style.top = (rect.bottom + 6) + 'px';
   tt.classList.add('visible');
-}
-
-function moveLinkTooltip(e) {
-  // tooltip follows cursor X slightly
 }
 
 function hideLinkTooltip() {
