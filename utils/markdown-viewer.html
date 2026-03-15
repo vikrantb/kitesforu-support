@@ -1,0 +1,2544 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Markdown Viewer</title>
+
+<!-- Fonts: Inter for UI, Literata for reading, JetBrains Mono for code -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,500;0,7..72,600;0,7..72,700;1,7..72,400;1,7..72,500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<!-- markdown-it + plugins -->
+<script src="https://cdn.jsdelivr.net/npm/markdown-it@14.1.0/dist/markdown-it.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/markdown-it-anchor@9.2.0/dist/markdownItAnchor.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/markdown-it-task-lists@2.1.1/dist/markdown-it-task-lists.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/markdown-it-footnote@4.0.0/dist/markdown-it-footnote.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/markdown-it-mark@4.0.0/dist/markdown-it-mark.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/markdown-it-sub@2.0.0/dist/markdown-it-sub.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/markdown-it-sup@2.0.0/dist/markdown-it-sup.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/markdown-it-deflist@3.0.0/dist/markdown-it-deflist.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/markdown-it-abbr@2.0.0/dist/markdown-it-abbr.min.js"></script>
+
+<!-- Syntax highlighting -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.10.0/styles/github.min.css" id="hljs-light">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.10.0/styles/github-dark.min.css" id="hljs-dark" disabled>
+<script src="https://cdn.jsdelivr.net/npm/highlight.js@11.10.0/lib/core.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/highlight.js@11.10.0/lib/languages/javascript.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/highlight.js@11.10.0/lib/languages/typescript.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/highlight.js@11.10.0/lib/languages/python.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/highlight.js@11.10.0/lib/languages/bash.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/highlight.js@11.10.0/lib/languages/json.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/highlight.js@11.10.0/lib/languages/yaml.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/highlight.js@11.10.0/lib/languages/css.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/highlight.js@11.10.0/lib/languages/xml.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/highlight.js@11.10.0/lib/languages/sql.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/highlight.js@11.10.0/lib/languages/go.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/highlight.js@11.10.0/lib/languages/rust.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/highlight.js@11.10.0/lib/languages/java.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/highlight.js@11.10.0/lib/languages/shell.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/highlight.js@11.10.0/lib/languages/dockerfile.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/highlight.js@11.10.0/lib/languages/markdown.min.js"></script>
+
+<!-- Mermaid -->
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js"></script>
+
+<!-- KaTeX for math -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+
+<style>
+/* ===== CSS Custom Properties ===== */
+:root {
+  --bg-primary: #FAFAF6;
+  --bg-secondary: #F2F0EA;
+  --bg-tertiary: #E9E6DE;
+  --bg-code: #F4F2EC;
+  --bg-code-block: #F7F5F0;
+  --bg-hover: rgba(0,0,0,0.035);
+  --bg-active: rgba(0,0,0,0.06);
+  --bg-drop: rgba(107,143,113,0.07);
+  --bg-card: #FFFFFF;
+  --bg-tooltip: #3D3D3D;
+  --bg-tts-highlight: rgba(107,143,113,0.12);
+
+  --text-primary: #2C2F3A;
+  --text-secondary: #5A5D6B;
+  --text-tertiary: #8A8D9A;
+  --text-link: #4A6FA5;
+  --text-link-hover: #345285;
+  --text-code: #B85450;
+  --text-inverse: #FAFAF6;
+
+  --border-primary: #DDD9CF;
+  --border-secondary: #E8E4DA;
+  --border-accent: #B8A990;
+  --border-focus: #6B8F71;
+
+  --accent: #6B8F71;
+  --accent-hover: #5A7D60;
+  --accent-secondary: #4A6FA5;
+  --accent-warn: #C4873B;
+  --accent-danger: #B85450;
+
+  --shadow-xs: 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-sm: 0 1px 4px rgba(0,0,0,0.06);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.1);
+
+  --toc-width: 260px;
+  --content-max-width: 72ch;
+  --toolbar-height: 48px;
+  --tts-height: 0px;
+
+  --font-reading: 'Literata', 'Charter', 'Georgia', serif;
+  --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+
+  --reading-size: 1.075rem;
+  --reading-lh: 1.78;
+  --heading-lh: 1.28;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+
+  --transition-fast: 0.12s ease;
+  --transition-normal: 0.2s ease;
+  --transition-slow: 0.3s ease;
+}
+
+[data-theme="dark"] {
+  --bg-primary: #1C1C24;
+  --bg-secondary: #24242E;
+  --bg-tertiary: #2C2C38;
+  --bg-code: #282834;
+  --bg-code-block: #222230;
+  --bg-hover: rgba(255,255,255,0.045);
+  --bg-active: rgba(255,255,255,0.07);
+  --bg-drop: rgba(127,181,137,0.08);
+  --bg-card: #282832;
+  --bg-tts-highlight: rgba(127,181,137,0.15);
+
+  --text-primary: #DDD9D0;
+  --text-secondary: #A5A2B0;
+  --text-tertiary: #6E6C7A;
+  --text-link: #7FAADB;
+  --text-link-hover: #A3C4EA;
+  --text-code: #E88D9E;
+  --text-inverse: #1C1C24;
+
+  --border-primary: #383848;
+  --border-secondary: #30303C;
+  --border-accent: #555568;
+  --border-focus: #7FB589;
+
+  --accent: #7FB589;
+  --accent-hover: #6AA378;
+  --accent-secondary: #7FAADB;
+  --accent-warn: #D9A05B;
+  --accent-danger: #D47B78;
+
+  --shadow-xs: 0 1px 2px rgba(0,0,0,0.15);
+  --shadow-sm: 0 1px 4px rgba(0,0,0,0.2);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.25);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.3);
+}
+
+[data-theme="sepia"] {
+  --bg-primary: #F5EDD9;
+  --bg-secondary: #EDE4CC;
+  --bg-tertiary: #E3DAC0;
+  --bg-code: #EDE5D0;
+  --bg-code-block: #F0E8D4;
+  --bg-hover: rgba(80,60,20,0.04);
+  --bg-active: rgba(80,60,20,0.07);
+  --bg-drop: rgba(107,143,113,0.07);
+  --bg-card: #F8F2E2;
+  --bg-tts-highlight: rgba(107,143,113,0.12);
+
+  --text-primary: #3E3428;
+  --text-secondary: #6A5D4E;
+  --text-tertiary: #9A8D7E;
+  --text-link: #5A7A5A;
+  --text-link-hover: #3D5A3D;
+  --text-code: #A0522D;
+  --text-inverse: #F5EDD9;
+
+  --border-primary: #D4CAB0;
+  --border-secondary: #DED4BA;
+  --border-accent: #B8A880;
+  --border-focus: #6B8F71;
+
+  --accent: #6B8F71;
+  --accent-hover: #5A7D60;
+  --accent-secondary: #5A7A5A;
+  --accent-warn: #B8862B;
+  --accent-danger: #A0522D;
+}
+
+/* ===== Reset ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: calc(var(--toolbar-height) + 24px);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+body {
+  font-family: var(--font-ui);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.6;
+  transition: background-color var(--transition-slow), color var(--transition-slow);
+  overflow-x: hidden;
+}
+
+/* ===== Toolbar ===== */
+.toolbar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  height: var(--toolbar-height);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-primary);
+  display: flex; align-items: center;
+  padding: 0 12px; gap: 4px;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  transition: background-color var(--transition-slow);
+}
+
+.toolbar-group {
+  display: flex; align-items: center; gap: 3px;
+}
+
+.toolbar-title {
+  font-weight: 600; font-size: 0.88rem;
+  color: var(--text-primary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  min-width: 0; margin-right: 8px;
+  display: flex; align-items: center; gap: 6px;
+}
+
+.toolbar-breadcrumb {
+  font-size: 0.72rem; font-weight: 400;
+  color: var(--text-tertiary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: 200px;
+  margin-left: 4px;
+}
+
+.toolbar-spacer { flex: 1; }
+
+.toolbar-meta {
+  font-size: 0.7rem; color: var(--text-tertiary);
+  white-space: nowrap;
+  margin: 0 6px;
+}
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--border-primary);
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  padding: 5px 10px;
+  font-size: 0.78rem; font-family: var(--font-ui); font-weight: 500;
+  cursor: pointer; white-space: nowrap; gap: 4px;
+  transition: all var(--transition-fast);
+  line-height: 1;
+}
+.btn:hover { background: var(--bg-hover); color: var(--text-primary); border-color: var(--border-accent); }
+.btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.btn.active:hover { background: var(--accent-hover); }
+.btn svg { width: 15px; height: 15px; flex-shrink: 0; }
+.btn .lbl { display: inline; }
+.btn-icon { padding: 5px 7px; }
+
+.toolbar-sep { width: 1px; height: 20px; background: var(--border-primary); margin: 0 3px; }
+
+/* Font size controls */
+.font-ctrl {
+  display: flex; align-items: center; gap: 0;
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm); overflow: hidden;
+}
+.font-ctrl button {
+  background: var(--bg-primary); border: none; color: var(--text-secondary);
+  padding: 5px 8px; cursor: pointer; font-family: var(--font-ui);
+  font-weight: 600; font-size: 0.78rem; transition: all var(--transition-fast);
+}
+.font-ctrl button:hover { background: var(--bg-hover); color: var(--text-primary); }
+.font-ctrl .font-lbl {
+  padding: 3px 5px; font-size: 0.65rem; color: var(--text-tertiary);
+  min-width: 22px; text-align: center; user-select: none;
+  background: var(--bg-secondary);
+}
+
+/* Theme dropdown */
+.dropdown-wrap { position: relative; }
+.dropdown {
+  position: absolute; top: calc(100% + 4px); right: 0;
+  background: var(--bg-card); border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md); padding: 4px;
+  box-shadow: var(--shadow-md); display: none;
+  min-width: 130px; z-index: 200;
+}
+.dropdown.show { display: block; }
+.dropdown-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 12px; border-radius: 6px; cursor: pointer;
+  font-size: 0.78rem; font-weight: 500; color: var(--text-secondary);
+  transition: all var(--transition-fast); border: none; background: none;
+  width: 100%; font-family: var(--font-ui);
+}
+.dropdown-item:hover { background: var(--bg-hover); color: var(--text-primary); }
+.dropdown-item.active { background: var(--bg-active); color: var(--text-primary); }
+.dropdown-swatch {
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 2px solid var(--border-primary); flex-shrink: 0;
+}
+
+/* ===== Progress bar ===== */
+.progress-bar {
+  position: fixed; top: var(--toolbar-height); left: 0;
+  height: 2px; background: var(--accent); z-index: 99;
+  transition: width 80ms linear; width: 0;
+}
+
+/* ===== Layout ===== */
+.layout {
+  display: flex;
+  margin-top: var(--toolbar-height);
+  min-height: calc(100vh - var(--toolbar-height));
+  padding-bottom: var(--tts-height);
+}
+
+/* ===== TOC Sidebar ===== */
+.toc-sidebar {
+  position: fixed; top: var(--toolbar-height); left: 0; bottom: 0;
+  width: var(--toc-width);
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border-primary);
+  overflow-y: auto; padding: 14px 0;
+  transition: transform var(--transition-slow), background-color var(--transition-slow);
+  z-index: 50;
+  scrollbar-width: thin; scrollbar-color: var(--border-accent) transparent;
+}
+.toc-sidebar::-webkit-scrollbar { width: 4px; }
+.toc-sidebar::-webkit-scrollbar-track { background: transparent; }
+.toc-sidebar::-webkit-scrollbar-thumb { background: var(--border-accent); border-radius: 2px; }
+.toc-sidebar.hidden { transform: translateX(-100%); }
+
+.toc-header {
+  padding: 0 14px 10px;
+  font-size: 0.68rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--text-tertiary);
+}
+
+.toc-list { list-style: none; }
+
+.toc-link {
+  display: block; padding: 4px 14px;
+  font-size: 0.78rem; color: var(--text-secondary);
+  text-decoration: none; line-height: 1.4;
+  border-left: 2px solid transparent;
+  transition: all var(--transition-fast);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.toc-link:hover { color: var(--text-primary); background: var(--bg-hover); }
+.toc-link.active {
+  color: var(--accent); border-left-color: var(--accent);
+  background: var(--bg-active); font-weight: 500;
+}
+.toc-link[data-level="1"] { padding-left: 14px; font-weight: 500; }
+.toc-link[data-level="2"] { padding-left: 14px; }
+.toc-link[data-level="3"] { padding-left: 28px; font-size: 0.75rem; }
+.toc-link[data-level="4"] { padding-left: 42px; font-size: 0.73rem; }
+.toc-link[data-level="5"] { padding-left: 54px; font-size: 0.72rem; }
+.toc-link[data-level="6"] { padding-left: 64px; font-size: 0.72rem; }
+
+/* ===== Content area ===== */
+.content-wrapper {
+  flex: 1; margin-left: var(--toc-width);
+  transition: margin-left var(--transition-slow);
+  display: flex; justify-content: center;
+  padding: 36px 24px 80px;
+}
+.toc-sidebar.hidden ~ .content-wrapper,
+.content-wrapper.full-width { margin-left: 0; }
+.content-wrapper.expanded .content { max-width: 100%; }
+
+.content { max-width: var(--content-max-width); width: 100%; transition: max-width var(--transition-slow); }
+
+/* ===== Welcome / Drop Zone ===== */
+.welcome-screen {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  min-height: 60vh; text-align: center;
+}
+.drop-zone {
+  width: 100%; max-width: 520px;
+  border: 2px dashed var(--border-accent);
+  border-radius: var(--radius-lg);
+  padding: 44px 32px;
+  background: var(--bg-secondary);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+}
+.drop-zone:hover, .drop-zone.drag-over {
+  border-color: var(--accent);
+  background: var(--bg-drop);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+.drop-zone-icon { font-size: 2.8rem; margin-bottom: 14px; opacity: 0.45; }
+.drop-zone-title { font-size: 1.05rem; font-weight: 600; margin-bottom: 4px; color: var(--text-primary); }
+.drop-zone-sub { font-size: 0.82rem; color: var(--text-tertiary); margin-bottom: 18px; }
+
+.drop-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--accent); color: #fff; border: none;
+  padding: 9px 18px; border-radius: var(--radius-sm);
+  font-size: 0.85rem; font-weight: 500; font-family: var(--font-ui);
+  cursor: pointer; transition: opacity var(--transition-fast);
+}
+.drop-btn:hover { opacity: 0.9; }
+
+.drop-or { margin: 14px 0 10px; font-size: 0.75rem; color: var(--text-tertiary); }
+.paste-hint { font-size: 0.75rem; color: var(--text-tertiary); }
+.paste-hint kbd {
+  display: inline-block; padding: 1px 5px;
+  font-size: 0.68rem; font-family: var(--font-mono);
+  background: var(--bg-tertiary); border: 1px solid var(--border-primary);
+  border-radius: 3px;
+}
+
+/* Settings panel (base path) */
+.settings-toast {
+  position: fixed; top: calc(var(--toolbar-height) + 8px); right: 12px;
+  background: var(--bg-card); border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md); padding: 14px 16px;
+  box-shadow: var(--shadow-md); z-index: 200;
+  display: none; width: 380px; max-width: 90vw;
+}
+.settings-toast.show { display: block; }
+.settings-toast label {
+  display: block; font-size: 0.72rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.04em;
+  color: var(--text-tertiary); margin-bottom: 5px;
+}
+.settings-toast input {
+  width: 100%; padding: 7px 10px; border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm); font-family: var(--font-mono);
+  font-size: 0.8rem; background: var(--bg-primary); color: var(--text-primary);
+  outline: none;
+}
+.settings-toast input:focus { border-color: var(--border-focus); }
+.settings-toast .hint { font-size: 0.7rem; color: var(--text-tertiary); margin-top: 5px; }
+.settings-toast .settings-actions { display: flex; gap: 6px; margin-top: 10px; justify-content: flex-end; }
+
+/* ===== Markdown Body ===== */
+.md-body {
+  font-family: var(--font-reading);
+  font-size: var(--reading-size);
+  line-height: var(--reading-lh);
+  color: var(--text-primary);
+}
+
+/* Headings */
+.md-body h1,.md-body h2,.md-body h3,
+.md-body h4,.md-body h5,.md-body h6 {
+  font-family: var(--font-ui);
+  line-height: var(--heading-lh);
+  color: var(--text-primary);
+  margin-top: 2em; margin-bottom: 0.5em;
+  position: relative;
+  scroll-margin-top: calc(var(--toolbar-height) + 24px);
+  display: flex; align-items: center; gap: 0;
+}
+.md-body h1 { font-size: 1.9rem; font-weight: 700; margin-top: 0; padding-bottom: 0.35em; border-bottom: 1px solid var(--border-secondary); }
+.md-body h2 { font-size: 1.45rem; font-weight: 600; padding-bottom: 0.25em; border-bottom: 1px solid var(--border-secondary); }
+.md-body h3 { font-size: 1.2rem; font-weight: 600; }
+.md-body h4 { font-size: 1.05rem; font-weight: 600; }
+.md-body h5 { font-size: 0.95rem; font-weight: 600; }
+.md-body h6 { font-size: 0.88rem; font-weight: 600; color: var(--text-secondary); }
+
+/* Section toggle chevrons - always visible */
+.section-toggle {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; flex-shrink: 0;
+  margin-right: 4px;
+  border: none; background: none;
+  color: var(--text-tertiary);
+  cursor: pointer; border-radius: 4px;
+  transition: all var(--transition-fast);
+  opacity: 0.4;
+}
+.section-toggle:hover { opacity: 1; background: var(--bg-hover); color: var(--accent); }
+.section-toggle svg {
+  width: 14px; height: 14px;
+  transition: transform var(--transition-normal);
+}
+.section-toggle.collapsed svg { transform: rotate(-90deg); }
+.section-content.collapsed { display: none; }
+
+/* Heading anchors */
+.header-anchor {
+  opacity: 0; color: var(--text-tertiary); text-decoration: none;
+  margin-left: 6px; font-size: 0.8em; transition: opacity var(--transition-fast);
+}
+.md-body h1:hover .header-anchor,
+.md-body h2:hover .header-anchor,
+.md-body h3:hover .header-anchor,
+.md-body h4:hover .header-anchor { opacity: 0.5; }
+.header-anchor:hover { opacity: 1 !important; color: var(--accent); }
+
+/* Paragraphs */
+.md-body p { margin-bottom: 1.15em; word-wrap: break-word; overflow-wrap: break-word; }
+
+/* TTS highlight */
+.md-body .tts-active {
+  background: var(--bg-tts-highlight);
+  border-radius: 4px;
+  transition: background var(--transition-normal);
+}
+
+/* Links — base */
+.md-body a {
+  color: var(--text-link);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1.5px;
+  text-decoration-color: color-mix(in srgb, var(--text-link) 35%, transparent);
+  transition: all var(--transition-fast);
+  border-radius: 3px;
+  padding: 1px 3px;
+  margin: 0 -1px;
+  position: relative;
+}
+.md-body a:hover {
+  color: var(--text-link-hover);
+  text-decoration-color: var(--text-link-hover);
+  background: color-mix(in srgb, var(--text-link) 8%, transparent);
+}
+
+/* Anchor links (heading #) — no decoration */
+.md-body a.header-anchor {
+  text-decoration: none; background: none; padding: 0; margin: 0;
+}
+.md-body a.header-anchor::after,
+.md-body a.header-anchor .link-icon { display: none !important; }
+
+/* Link type icons — inline SVG via background */
+.md-body a .link-icon {
+  display: inline-block; width: 13px; height: 13px;
+  margin-left: 3px; vertical-align: -1px;
+  opacity: 0.45; flex-shrink: 0;
+  transition: opacity var(--transition-fast);
+}
+.md-body a:hover .link-icon { opacity: 0.7; }
+
+/* Internal anchor links (same-page) */
+.md-body a[href^="#"]:not(.header-anchor) {
+  text-decoration-style: dotted;
+  text-decoration-color: color-mix(in srgb, var(--accent) 50%, transparent);
+  color: var(--accent);
+}
+.md-body a[href^="#"]:not(.header-anchor):hover {
+  color: var(--accent-hover);
+  text-decoration-color: var(--accent-hover);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+/* Mailto links */
+.md-body a[href^="mailto"] {
+  color: var(--accent-warn);
+  text-decoration-color: color-mix(in srgb, var(--accent-warn) 35%, transparent);
+}
+.md-body a[href^="mailto"]:hover {
+  color: var(--accent-warn);
+  text-decoration-color: var(--accent-warn);
+  background: color-mix(in srgb, var(--accent-warn) 8%, transparent);
+}
+
+/* Link chip — standalone link on its own line becomes a card */
+.link-chip {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; margin: 0.6em 0;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-sm);
+  text-decoration: none !important;
+  color: var(--text-primary) !important;
+  transition: all var(--transition-fast);
+  overflow: hidden;
+}
+.link-chip:hover {
+  border-color: var(--border-accent);
+  box-shadow: var(--shadow-xs);
+  background: var(--bg-hover) !important;
+  transform: translateY(-1px);
+}
+.link-chip .link-chip-icon {
+  width: 32px; height: 32px; border-radius: 6px;
+  background: var(--bg-tertiary);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; font-size: 1rem;
+}
+.link-chip .link-chip-body { min-width: 0; flex: 1; }
+.link-chip .link-chip-title {
+  font-family: var(--font-ui); font-size: 0.88rem; font-weight: 500;
+  color: var(--text-link); overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; display: block;
+}
+.link-chip .link-chip-url {
+  font-family: var(--font-mono); font-size: 0.68rem;
+  color: var(--text-tertiary); overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap; display: block;
+  margin-top: 1px;
+}
+.link-chip .link-chip-badge {
+  font-size: 0.62rem; font-weight: 600; font-family: var(--font-ui);
+  text-transform: uppercase; letter-spacing: 0.04em;
+  padding: 2px 6px; border-radius: 3px;
+  background: color-mix(in srgb, var(--text-link) 12%, transparent);
+  color: var(--text-link); white-space: nowrap; flex-shrink: 0;
+}
+
+/* Link tooltip */
+.link-tooltip {
+  position: fixed; z-index: 250;
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md);
+  padding: 6px 10px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+  max-width: 400px;
+  display: flex; align-items: center; gap: 8px;
+}
+.link-tooltip.visible { opacity: 1; pointer-events: auto; }
+.link-tooltip-icon {
+  width: 18px; height: 18px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0.6;
+}
+.link-tooltip-text {
+  font-family: var(--font-mono); font-size: 0.72rem;
+  color: var(--text-secondary);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  min-width: 0;
+}
+.link-tooltip-badge {
+  font-size: 0.6rem; font-weight: 600; font-family: var(--font-ui);
+  text-transform: uppercase; letter-spacing: 0.04em;
+  padding: 1px 5px; border-radius: 3px;
+  background: color-mix(in srgb, var(--text-link) 12%, transparent);
+  color: var(--text-link); white-space: nowrap; flex-shrink: 0;
+}
+.link-tooltip-copy {
+  cursor: pointer; pointer-events: auto;
+  background: none; border: 1px solid var(--border-primary);
+  border-radius: 4px; padding: 2px 6px;
+  font-size: 0.62rem; font-family: var(--font-ui);
+  color: var(--text-tertiary); white-space: nowrap;
+  transition: all var(--transition-fast);
+}
+.link-tooltip-copy:hover { background: var(--bg-hover); color: var(--text-primary); }
+
+/* Links index panel */
+.links-panel {
+  position: fixed; top: var(--toolbar-height); right: 0; bottom: 0;
+  width: 320px; max-width: 90vw;
+  background: var(--bg-secondary);
+  border-left: 1px solid var(--border-primary);
+  z-index: 55; overflow-y: auto; padding: 14px;
+  transform: translateX(100%);
+  transition: transform var(--transition-slow);
+  box-shadow: var(--shadow-lg);
+}
+.links-panel.show { transform: translateX(0); }
+.links-panel-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px;
+}
+.links-panel-header h4 {
+  font-size: 0.82rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.04em;
+  color: var(--text-tertiary);
+}
+.links-panel-close {
+  background: none; border: none; cursor: pointer;
+  color: var(--text-tertiary); font-size: 1.1rem;
+  padding: 2px 6px; border-radius: 4px;
+  transition: all var(--transition-fast);
+}
+.links-panel-close:hover { background: var(--bg-hover); color: var(--text-primary); }
+.links-panel-group { margin-bottom: 14px; }
+.links-panel-group-title {
+  font-size: 0.68rem; font-weight: 600; color: var(--text-tertiary);
+  text-transform: uppercase; letter-spacing: 0.05em;
+  margin-bottom: 5px; display: flex; align-items: center; gap: 5px;
+}
+.links-panel-group-count {
+  background: var(--bg-tertiary); border-radius: 8px;
+  padding: 0 5px; font-size: 0.62rem;
+}
+.links-panel-item {
+  display: block; padding: 5px 8px; border-radius: 5px;
+  font-size: 0.78rem; color: var(--text-link);
+  text-decoration: none; overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap;
+  transition: background var(--transition-fast);
+  margin-bottom: 1px;
+}
+.links-panel-item:hover { background: var(--bg-hover); }
+.links-panel-item-url {
+  font-family: var(--font-mono); font-size: 0.65rem;
+  color: var(--text-tertiary); display: block;
+  overflow: hidden; text-overflow: ellipsis;
+}
+
+/* Lists */
+.md-body ul, .md-body ol { padding-left: 1.6em; margin-bottom: 1.15em; }
+.md-body li { margin-bottom: 0.25em; }
+.md-body li > p { margin-bottom: 0.4em; }
+.md-body li > ul, .md-body li > ol { margin-top: 0.25em; margin-bottom: 0.25em; }
+
+/* Task lists */
+.md-body .task-list-item { list-style: none; margin-left: -1.4em; }
+.md-body .task-list-item input[type="checkbox"] { margin-right: 7px; accent-color: var(--accent); }
+
+/* Blockquotes */
+.md-body blockquote {
+  margin: 1.1em 0; padding: 0.5em 1.1em;
+  border-left: 3px solid var(--accent);
+  background: var(--bg-secondary);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  color: var(--text-secondary);
+}
+.md-body blockquote p:last-child { margin-bottom: 0; }
+
+/* Inline code */
+.md-body code {
+  font-family: var(--font-mono); font-size: 0.86em;
+  padding: 0.12em 0.35em; background: var(--bg-code);
+  border-radius: 3px; color: var(--text-code); word-break: break-word;
+}
+
+/* Code blocks */
+.md-body pre {
+  margin: 1.1em 0; border-radius: var(--radius-md);
+  overflow: hidden; background: var(--bg-code-block);
+  border: 1px solid var(--border-secondary);
+}
+.md-body pre code {
+  display: block; padding: 14px 18px; overflow-x: auto;
+  font-size: 0.83rem; line-height: 1.55;
+  background: none; color: var(--text-primary); border-radius: 0;
+}
+
+.code-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 5px 12px; background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border-secondary);
+  font-family: var(--font-ui); font-size: 0.68rem;
+  color: var(--text-tertiary); font-weight: 500;
+  text-transform: uppercase; letter-spacing: 0.04em;
+}
+.copy-btn {
+  display: inline-flex; align-items: center; gap: 3px;
+  background: none; border: 1px solid var(--border-primary);
+  color: var(--text-tertiary); padding: 2px 7px; border-radius: 4px;
+  font-size: 0.66rem; font-family: var(--font-ui); cursor: pointer;
+  transition: all var(--transition-fast);
+}
+.copy-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+.copy-btn.copied { color: var(--accent); border-color: var(--accent); }
+
+/* Tables */
+.md-body table {
+  width: 100%; border-collapse: collapse; margin: 1.1em 0;
+  font-size: 0.9em; display: block; overflow-x: auto;
+}
+.md-body thead th {
+  background: var(--bg-secondary); font-family: var(--font-ui);
+  font-weight: 600; font-size: 0.78rem;
+  text-transform: uppercase; letter-spacing: 0.03em;
+  color: var(--text-secondary);
+}
+.md-body th, .md-body td { padding: 9px 12px; border: 1px solid var(--border-secondary); text-align: left; }
+.md-body tbody tr:nth-child(even) { background: var(--bg-secondary); }
+.md-body tbody tr:hover { background: var(--bg-hover); }
+
+/* HR */
+.md-body hr { margin: 2em 0; border: none; height: 1px; background: var(--border-primary); }
+
+/* Images */
+.md-body img {
+  max-width: 100%; height: auto; border-radius: var(--radius-sm);
+  margin: 0.8em 0; box-shadow: var(--shadow-xs);
+  cursor: zoom-in; transition: transform var(--transition-normal);
+}
+.md-body img:hover { transform: scale(1.01); }
+
+/* Image lightbox */
+.lightbox {
+  position: fixed; inset: 0; z-index: 500;
+  background: rgba(0,0,0,0.85);
+  display: none; align-items: center; justify-content: center;
+  cursor: zoom-out;
+}
+.lightbox.show { display: flex; }
+.lightbox img { max-width: 92vw; max-height: 92vh; border-radius: var(--radius-md); box-shadow: var(--shadow-lg); }
+
+/* Details / Summary */
+.md-body details {
+  margin: 1em 0; padding: 8px 14px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-sm);
+}
+.md-body details summary {
+  font-family: var(--font-ui); font-weight: 500;
+  cursor: pointer; padding: 3px 0; color: var(--text-primary); user-select: none;
+}
+.md-body details summary:hover { color: var(--accent); }
+.md-body details[open] summary { margin-bottom: 8px; }
+
+/* Definition lists */
+.md-body dl { margin: 1em 0; }
+.md-body dt { font-weight: 600; margin-top: 0.7em; }
+.md-body dd { margin-left: 1.4em; margin-bottom: 0.4em; color: var(--text-secondary); }
+
+/* Footnotes */
+.md-body .footnotes { margin-top: 2em; border-top: 1px solid var(--border-primary); padding-top: 1em; font-size: 0.88em; }
+.md-body .footnotes ol { padding-left: 1.4em; }
+
+/* Mark */
+.md-body mark { background: rgba(255,220,100,0.3); padding: 1px 3px; border-radius: 2px; }
+[data-theme="dark"] .md-body mark { background: rgba(255,220,100,0.12); }
+
+/* Mermaid */
+.mermaid-wrapper {
+  margin: 1.1em 0; padding: 18px;
+  background: var(--bg-card); border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-md); overflow-x: auto; text-align: center;
+}
+
+/* ===== FABs ===== */
+.fab-container {
+  position: fixed; bottom: 20px; right: 20px;
+  display: flex; flex-direction: column; gap: 6px; z-index: 80;
+}
+.fab {
+  width: 38px; height: 38px; border-radius: 50%;
+  border: 1px solid var(--border-primary);
+  background: var(--bg-card); color: var(--text-secondary);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  box-shadow: var(--shadow-sm); transition: all var(--transition-fast);
+  font-size: 1rem;
+}
+.fab:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); color: var(--text-primary); }
+.fab.hidden { display: none; }
+
+/* ===== Search overlay ===== */
+.overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 300; display: none; align-items: flex-start; justify-content: center; padding-top: 14vh; }
+.overlay.show { display: flex; }
+
+.search-box {
+  width: 540px; max-width: 90vw;
+  background: var(--bg-card); border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); overflow: hidden;
+}
+.search-input-wrap {
+  display: flex; align-items: center; padding: 11px 14px; gap: 9px;
+  border-bottom: 1px solid var(--border-secondary);
+}
+.search-input-wrap svg { color: var(--text-tertiary); flex-shrink: 0; width: 17px; height: 17px; }
+.search-input {
+  flex: 1; border: none; outline: none; background: none;
+  font-size: 0.95rem; font-family: var(--font-ui); color: var(--text-primary);
+}
+.search-input::placeholder { color: var(--text-tertiary); }
+.search-results { max-height: 300px; overflow-y: auto; padding: 4px; }
+.search-result-item {
+  display: block; padding: 9px 12px; font-size: 0.85rem;
+  color: var(--text-secondary); border-radius: var(--radius-sm);
+  cursor: pointer; transition: background var(--transition-fast);
+}
+.search-result-item:hover, .search-result-item.focused { background: var(--bg-hover); color: var(--text-primary); }
+.search-match { background: rgba(255,220,100,0.35); border-radius: 2px; padding: 0 1px; }
+.search-result-heading { font-weight: 500; display: block; margin-bottom: 1px; }
+.search-result-ctx { font-size: 0.75rem; color: var(--text-tertiary); display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.search-footer {
+  padding: 7px 14px; font-size: 0.68rem; color: var(--text-tertiary);
+  border-top: 1px solid var(--border-secondary); display: flex; gap: 10px;
+}
+.search-footer kbd {
+  display: inline-block; padding: 1px 4px; font-family: var(--font-mono);
+  font-size: 0.64rem; background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary); border-radius: 3px;
+}
+
+/* ===== Keyboard shortcuts help ===== */
+.shortcuts-box {
+  width: 420px; max-width: 90vw;
+  background: var(--bg-card); border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg); box-shadow: var(--shadow-lg);
+  padding: 20px 24px; overflow: hidden;
+}
+.shortcuts-box h3 { font-size: 1rem; margin-bottom: 14px; font-family: var(--font-ui); }
+.shortcut-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 5px 0; font-size: 0.82rem; color: var(--text-secondary);
+}
+.shortcut-row kbd {
+  display: inline-block; padding: 2px 7px; font-family: var(--font-mono);
+  font-size: 0.72rem; background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary); border-radius: 4px;
+  min-width: 24px; text-align: center;
+}
+
+/* ===== TTS Player ===== */
+.tts-player {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  z-index: 90; background: var(--bg-secondary);
+  border-top: 1px solid var(--border-primary);
+  padding: 8px 16px;
+  display: none;
+  box-shadow: 0 -2px 12px rgba(0,0,0,0.06);
+  transition: background-color var(--transition-slow);
+}
+.tts-player.show { display: block; }
+
+.tts-controls {
+  display: flex; align-items: center; gap: 10px; max-width: 900px; margin: 0 auto;
+}
+
+.tts-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px; border-radius: 50%;
+  border: 1px solid var(--border-primary); background: var(--bg-primary);
+  color: var(--text-primary); cursor: pointer;
+  transition: all var(--transition-fast); flex-shrink: 0;
+}
+.tts-btn:hover { background: var(--bg-hover); border-color: var(--border-accent); }
+.tts-btn.tts-play {
+  width: 38px; height: 38px;
+  background: var(--accent); color: #fff; border-color: var(--accent);
+}
+.tts-btn.tts-play:hover { background: var(--accent-hover); }
+.tts-btn svg { width: 16px; height: 16px; }
+
+.tts-progress-wrap { flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.tts-section-label {
+  font-size: 0.72rem; color: var(--text-secondary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-weight: 500;
+}
+.tts-progress-bar {
+  width: 100%; height: 4px; border-radius: 2px;
+  background: var(--bg-tertiary); cursor: pointer; position: relative;
+  overflow: hidden;
+}
+.tts-progress-fill {
+  height: 100%; background: var(--accent); border-radius: 2px;
+  width: 0; transition: width 0.3s linear;
+}
+
+.tts-speed {
+  font-size: 0.72rem; font-weight: 600;
+  color: var(--text-secondary); cursor: pointer;
+  padding: 3px 8px; border-radius: 4px;
+  background: var(--bg-tertiary); border: none;
+  font-family: var(--font-ui); white-space: nowrap;
+  transition: all var(--transition-fast);
+}
+.tts-speed:hover { color: var(--text-primary); }
+
+.tts-close {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px; border-radius: 50%;
+  border: none; background: none; color: var(--text-tertiary);
+  cursor: pointer; font-size: 1.1rem;
+  transition: all var(--transition-fast);
+}
+.tts-close:hover { color: var(--text-primary); background: var(--bg-hover); }
+
+/* ===== Focus mode ===== */
+body.focus-mode .md-body > *:not(.tts-active):not(h1):not(h2):not(h3):not(h4):not(h5):not(h6):not(.section-content) {
+  opacity: 0.3;
+  transition: opacity var(--transition-slow);
+}
+body.focus-mode .md-body > *:hover,
+body.focus-mode .md-body > .tts-active {
+  opacity: 1;
+}
+body.focus-mode .md-body .section-content > *:not(.tts-active) {
+  opacity: 0.3;
+  transition: opacity var(--transition-slow);
+}
+body.focus-mode .md-body .section-content > *:hover,
+body.focus-mode .md-body .section-content > .tts-active {
+  opacity: 1;
+}
+
+/* ===== Print ===== */
+@media print {
+  .toolbar, .toc-sidebar, .fab-container, .progress-bar,
+  .overlay, .tts-player, .settings-toast, .lightbox { display: none !important; }
+  .content-wrapper { margin-left: 0 !important; padding: 0 !important; }
+  .md-body { font-size: 11pt; }
+  .md-body pre { border: 1px solid #ccc; }
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 900px) {
+  .toc-sidebar { transform: translateX(-100%); box-shadow: var(--shadow-lg); }
+  .toc-sidebar.mobile-show { transform: translateX(0); }
+  .content-wrapper { margin-left: 0 !important; }
+  .btn .lbl { display: none; }
+  .toolbar-breadcrumb { display: none; }
+  .toolbar-meta { display: none; }
+}
+@media (max-width: 600px) {
+  .content-wrapper { padding: 18px 14px 60px; }
+  .md-body h1 { font-size: 1.45rem; }
+  .md-body h2 { font-size: 1.2rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- Toolbar -->
+<div class="toolbar">
+  <span class="toolbar-title" id="toolbarTitle">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" opacity="0.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+    <span id="titleText">Markdown Viewer</span>
+  </span>
+  <span class="toolbar-breadcrumb" id="breadcrumb"></span>
+  <span class="toolbar-meta" id="readingMeta"></span>
+
+  <span class="toolbar-spacer"></span>
+
+  <div class="toolbar-group">
+    <!-- Font size -->
+    <div class="font-ctrl">
+      <button onclick="changeFontSize(-1)" title="Smaller text">A&#8722;</button>
+      <span class="font-lbl" id="fontLbl">M</span>
+      <button onclick="changeFontSize(1)" title="Larger text">A+</button>
+    </div>
+
+    <div class="toolbar-sep"></div>
+
+    <!-- Width toggle -->
+    <button class="btn btn-icon" id="widthBtn" onclick="toggleWidth()" title="Toggle page width">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 8l4 4-4 4"/><path d="M6 8l-4 4 4 4"/><line x1="2" y1="12" x2="22" y2="12" opacity="0.3"/></svg>
+    </button>
+
+    <!-- TOC toggle -->
+    <button class="btn btn-icon" id="tocBtn" onclick="toggleToc()" title="Table of contents (Ctrl+B)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="15" y2="12"/><line x1="3" y1="18" x2="10" y2="18"/></svg>
+    </button>
+
+    <!-- Fold all -->
+    <button class="btn btn-icon" id="foldBtn" onclick="toggleAllSections()" title="Fold/Unfold sections" style="display:none">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="4,8 12,16 20,8"/></svg>
+    </button>
+
+    <!-- Focus mode -->
+    <button class="btn btn-icon" id="focusBtn" onclick="toggleFocus()" title="Focus mode">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+    </button>
+
+    <div class="toolbar-sep"></div>
+
+    <!-- Search -->
+    <button class="btn" onclick="openSearch()" title="Search (Ctrl+K)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <span class="lbl">Search</span>
+    </button>
+
+    <!-- Links index -->
+    <button class="btn btn-icon" id="linksPanelBtn" onclick="toggleLinksPanel()" title="All links" style="display:none">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+    </button>
+
+    <!-- TTS -->
+    <button class="btn" id="ttsToggleBtn" onclick="ttsToggle()" title="Read aloud" style="display:none">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 010 7.07"/><path d="M19.07 4.93a10 10 0 010 14.14"/></svg>
+      <span class="lbl">Listen</span>
+    </button>
+
+    <div class="toolbar-sep"></div>
+
+    <!-- Theme -->
+    <div class="dropdown-wrap">
+      <button class="btn btn-icon" onclick="toggleDropdown('themeDD')" title="Theme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+      </button>
+      <div class="dropdown" id="themeDD">
+        <button class="dropdown-item active" data-theme="light" onclick="setTheme('light')"><span class="dropdown-swatch" style="background:#FAFAF6"></span>Light</button>
+        <button class="dropdown-item" data-theme="sepia" onclick="setTheme('sepia')"><span class="dropdown-swatch" style="background:#F5EDD9"></span>Sepia</button>
+        <button class="dropdown-item" data-theme="dark" onclick="setTheme('dark')"><span class="dropdown-swatch" style="background:#1C1C24"></span>Dark</button>
+      </div>
+    </div>
+
+    <!-- Settings -->
+    <button class="btn btn-icon" onclick="toggleSettings()" title="Settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+    </button>
+
+    <!-- Open file -->
+    <button class="btn" onclick="document.getElementById('fileInput').click()" title="Open file">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+      <span class="lbl">Open</span>
+    </button>
+    <input type="file" id="fileInput" accept=".md,.markdown,.mdx,.txt,.text" style="display:none" onchange="handleFileInput(event)">
+  </div>
+</div>
+
+<!-- Progress bar -->
+<div class="progress-bar" id="progressBar"></div>
+
+<!-- Settings panel -->
+<div class="settings-toast" id="settingsPanel">
+  <label>Workspace Root Path</label>
+  <input type="text" id="basePathInput" placeholder="/Users/vikrantbhosale/gitprojects/kitesforu/" spellcheck="false">
+  <div class="hint">Set this to resolve relative paths like <code>kitesforu-docs/file.md</code>.<br>Then open via URL: <code>?file=kitesforu-docs/file.md</code></div>
+  <div class="settings-actions">
+    <button class="btn" onclick="saveBasePath()">Save</button>
+    <button class="btn" onclick="toggleSettings()">Close</button>
+  </div>
+</div>
+
+<!-- Search overlay -->
+<div class="overlay" id="searchOverlay" onclick="if(event.target===this)closeSearch()">
+  <div class="search-box">
+    <div class="search-input-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input class="search-input" id="searchInput" type="text" placeholder="Search headings and content..." oninput="handleSearch(this.value)" onkeydown="handleSearchKeys(event)">
+    </div>
+    <div class="search-results" id="searchResults"></div>
+    <div class="search-footer">
+      <span><kbd>&#8593;</kbd><kbd>&#8595;</kbd> Navigate</span>
+      <span><kbd>Enter</kbd> Jump</span>
+      <span><kbd>Esc</kbd> Close</span>
+    </div>
+  </div>
+</div>
+
+<!-- Shortcuts overlay -->
+<div class="overlay" id="shortcutsOverlay" onclick="if(event.target===this)closeShortcuts()">
+  <div class="shortcuts-box">
+    <h3>Keyboard Shortcuts</h3>
+    <div class="shortcut-row"><span>Search</span><span><kbd>Ctrl</kbd>+<kbd>K</kbd></span></div>
+    <div class="shortcut-row"><span>Toggle TOC</span><span><kbd>Ctrl</kbd>+<kbd>B</kbd></span></div>
+    <div class="shortcut-row"><span>Toggle width</span><span><kbd>Ctrl</kbd>+<kbd>\\</kbd></span></div>
+    <div class="shortcut-row"><span>Focus mode</span><span><kbd>Ctrl</kbd>+<kbd>.</kbd></span></div>
+    <div class="shortcut-row"><span>Fold/Unfold all</span><span><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd></span></div>
+    <div class="shortcut-row"><span>Read aloud</span><span><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd></span></div>
+    <div class="shortcut-row"><span>Open file</span><span><kbd>Ctrl</kbd>+<kbd>O</kbd></span></div>
+    <div class="shortcut-row"><span>Shortcuts help</span><span><kbd>?</kbd></span></div>
+    <div class="shortcut-row"><span>Close dialog</span><span><kbd>Esc</kbd></span></div>
+  </div>
+</div>
+
+<!-- Image lightbox -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <img id="lightboxImg" src="" alt="">
+</div>
+
+<!-- Link tooltip -->
+<div class="link-tooltip" id="linkTooltip">
+  <span class="link-tooltip-icon" id="linkTooltipIcon"></span>
+  <span class="link-tooltip-text" id="linkTooltipText"></span>
+  <span class="link-tooltip-badge" id="linkTooltipBadge"></span>
+  <button class="link-tooltip-copy" id="linkTooltipCopy" onclick="copyLinkUrl(event)">Copy</button>
+</div>
+
+<!-- Links panel -->
+<div class="links-panel" id="linksPanel">
+  <div class="links-panel-header">
+    <h4>All Links</h4>
+    <button class="links-panel-close" onclick="toggleLinksPanel()">&times;</button>
+  </div>
+  <div id="linksPanelContent"></div>
+</div>
+
+<!-- Layout -->
+<div class="layout">
+  <nav class="toc-sidebar" id="tocSidebar">
+    <div class="toc-header">Contents</div>
+    <ul class="toc-list" id="tocList"></ul>
+  </nav>
+
+  <div class="content-wrapper" id="contentWrapper">
+    <div class="content" id="content">
+      <div class="welcome-screen" id="welcomeScreen">
+        <div class="drop-zone" id="dropZone">
+          <div class="drop-zone-icon">&#128196;</div>
+          <div class="drop-zone-title">Open a Markdown file</div>
+          <div class="drop-zone-sub">Drag & drop, browse, paste, or use <code>?file=path</code></div>
+          <button class="drop-btn" onclick="event.stopPropagation(); document.getElementById('fileInput').click()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+            Browse files
+          </button>
+          <div class="drop-or">or</div>
+          <div class="paste-hint">Paste markdown with <kbd>Ctrl</kbd>+<kbd>V</kbd></div>
+        </div>
+      </div>
+      <article class="md-body" id="mdBody" style="display:none"></article>
+    </div>
+  </div>
+</div>
+
+<!-- FABs -->
+<div class="fab-container" id="fabContainer" style="display:none">
+  <button class="fab" id="fabUp" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Scroll to top">&#8593;</button>
+  <button class="fab" id="fabDown" onclick="window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'})" title="Scroll to bottom">&#8595;</button>
+</div>
+
+<!-- TTS Player bar -->
+<div class="tts-player" id="ttsPlayer">
+  <div class="tts-controls">
+    <button class="tts-btn" onclick="ttsPrev()" title="Previous section">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5"/></svg>
+    </button>
+    <button class="tts-btn tts-play" id="ttsPlayBtn" onclick="ttsPlayPause()" title="Play / Pause">
+      <svg id="ttsPlayIcon" viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg>
+      <svg id="ttsPauseIcon" viewBox="0 0 24 24" fill="currentColor" style="display:none"><rect x="5" y="4" width="4" height="16"/><rect x="15" y="4" width="4" height="16"/></svg>
+    </button>
+    <button class="tts-btn" onclick="ttsNext()" title="Next section">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
+    </button>
+
+    <div class="tts-progress-wrap">
+      <div class="tts-section-label" id="ttsSectionLabel">Ready</div>
+      <div class="tts-progress-bar" id="ttsProgressBar" onclick="ttsSeekClick(event)">
+        <div class="tts-progress-fill" id="ttsProgressFill"></div>
+      </div>
+    </div>
+
+    <button class="tts-speed" id="ttsSpeedBtn" onclick="ttsCycleSpeed()" title="Playback speed">1x</button>
+    <button class="tts-close" onclick="ttsStop()" title="Close player">&times;</button>
+  </div>
+</div>
+
+<script>
+// ============================================
+// State
+// ============================================
+let rawMarkdown = '';
+let currentTheme = localStorage.getItem('mdv-theme') || 'light';
+let fontStep = parseInt(localStorage.getItem('mdv-fontsize') || '0');
+let tocVisible = true;
+let allCollapsed = false;
+let isExpanded = false;
+let isFocusMode = false;
+let searchIndex = [];
+let searchFocusIdx = -1;
+let narrationMap = {};  // { blockIndex: narrationText }
+let currentFileName = '';
+
+const fontSizes = [
+  { label: 'XS', size: '0.92rem', lh: '1.7' },
+  { label: 'S',  size: '1rem',    lh: '1.75' },
+  { label: 'M',  size: '1.075rem', lh: '1.78' },
+  { label: 'L',  size: '1.15rem', lh: '1.82' },
+  { label: 'XL', size: '1.25rem', lh: '1.85' },
+];
+
+// ============================================
+// markdown-it setup
+// ============================================
+const md = window.markdownit({
+  html: true, linkify: true, typographer: true,
+  highlight(str, lang) {
+    const label = lang || 'text';
+    let hl = '';
+    if (lang && hljs.getLanguage(lang)) {
+      try { hl = hljs.highlight(str, { language: lang }).value; } catch (_) {}
+    }
+    if (!hl) hl = md.utils.escapeHtml(str);
+    return `<div class="code-header"><span>${md.utils.escapeHtml(label)}</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><code class="hljs language-${md.utils.escapeHtml(lang || '')}">${hl}</code>`;
+  }
+});
+
+if (window.markdownItAnchor) md.use(window.markdownItAnchor, {
+  permalink: markdownItAnchor.permalink.ariaHidden({ placement: 'after', symbol: '#', class: 'header-anchor' }),
+  slugify: s => s.toLowerCase().replace(/[^\w]+/g, '-').replace(/^-|-$/g, ''),
+});
+if (window.markdownItTaskLists) md.use(window.markdownItTaskLists, { enabled: true, label: true });
+if (window.markdownitFootnote) md.use(window.markdownitFootnote);
+if (window.markdownitMark) md.use(window.markdownitMark);
+if (window.markdownitSub) md.use(window.markdownitSub);
+if (window.markdownitSup) md.use(window.markdownitSup);
+if (window.markdownitDeflist) md.use(window.markdownitDeflist);
+if (window.markdownitAbbr) md.use(window.markdownitAbbr);
+
+// Mermaid fence override
+const defaultFence = md.renderer.rules.fence;
+md.renderer.rules.fence = function(tokens, idx, options, env, self) {
+  const token = tokens[idx];
+  if (token.info.trim() === 'mermaid') {
+    const id = 'mermaid-' + idx;
+    return `<div class="mermaid-wrapper"><pre class="mermaid" id="${id}">${md.utils.escapeHtml(token.content)}</pre></div>`;
+  }
+  return defaultFence ? defaultFence(tokens, idx, options, env, self) : self.renderToken(tokens, idx, options);
+};
+
+// KaTeX math: $..$ and $$..$$
+function renderMath(src) {
+  src = src.replace(/\$\$([^$]+?)\$\$/gs, (_, m) => {
+    try { return katex.renderToString(m.trim(), { displayMode: true, throwOnError: false }); } catch(e) { return `<pre>${m}</pre>`; }
+  });
+  src = src.replace(/\$([^$\n]+?)\$/g, (_, m) => {
+    try { return katex.renderToString(m.trim(), { displayMode: false, throwOnError: false }); } catch(e) { return `<code>${m}</code>`; }
+  });
+  return src;
+}
+
+// ============================================
+// Narration extraction: <!-- narrate: ... -->
+// Transparent to other viewers (HTML comment).
+// Place before a mermaid/image/table block.
+// ============================================
+function extractNarrations(src) {
+  narrationMap = {};
+  // Match: <!-- narrate: content --> (single or multiline)
+  const re = /<!--\s*narrate:\s*([\s\S]*?)-->/gi;
+  let match;
+  const positions = [];
+  while ((match = re.exec(src)) !== null) {
+    const text = match[1].trim();
+    const endPos = match.index + match[0].length;
+    // Find what block follows this comment
+    positions.push({ text, endPos, fullMatch: match[0] });
+  }
+  // Store narrations keyed by their position in source
+  // We'll match them to rendered elements later
+  return { cleaned: src, narrations: positions };
+}
+
+// ============================================
+// Theme
+// ============================================
+function setTheme(theme) {
+  currentTheme = theme;
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem('mdv-theme', theme);
+  document.getElementById('hljs-light').disabled = (theme === 'dark');
+  document.getElementById('hljs-dark').disabled = (theme !== 'dark');
+  document.querySelectorAll('.dropdown-item[data-theme]').forEach(el => {
+    el.classList.toggle('active', el.dataset.theme === theme);
+  });
+  closeDropdowns();
+  if (rawMarkdown) setTimeout(renderMermaidDiagrams, 100);
+}
+
+function toggleDropdown(id) {
+  const dd = document.getElementById(id);
+  const isOpen = dd.classList.contains('show');
+  closeDropdowns();
+  if (!isOpen) dd.classList.add('show');
+}
+function closeDropdowns() { document.querySelectorAll('.dropdown').forEach(d => d.classList.remove('show')); }
+document.addEventListener('click', (e) => { if (!e.target.closest('.dropdown-wrap')) closeDropdowns(); });
+
+// ============================================
+// Font Size
+// ============================================
+function changeFontSize(dir) {
+  fontStep = Math.max(-2, Math.min(2, fontStep + dir));
+  applyFontSize();
+  localStorage.setItem('mdv-fontsize', fontStep);
+}
+function applyFontSize() {
+  const fs = fontSizes[2 + fontStep];
+  document.documentElement.style.setProperty('--reading-size', fs.size);
+  document.documentElement.style.setProperty('--reading-lh', fs.lh);
+  document.getElementById('fontLbl').textContent = fs.label;
+}
+
+// ============================================
+// Width toggle
+// ============================================
+function toggleWidth() {
+  isExpanded = !isExpanded;
+  document.getElementById('contentWrapper').classList.toggle('expanded', isExpanded);
+  document.getElementById('widthBtn').classList.toggle('active', isExpanded);
+}
+
+// ============================================
+// Focus mode
+// ============================================
+function toggleFocus() {
+  isFocusMode = !isFocusMode;
+  document.body.classList.toggle('focus-mode', isFocusMode);
+  document.getElementById('focusBtn').classList.toggle('active', isFocusMode);
+}
+
+// ============================================
+// Settings
+// ============================================
+function toggleSettings() {
+  const p = document.getElementById('settingsPanel');
+  p.classList.toggle('show');
+  if (p.classList.contains('show')) {
+    document.getElementById('basePathInput').value = localStorage.getItem('mdv-basepath') || '';
+  }
+}
+function saveBasePath() {
+  let val = document.getElementById('basePathInput').value.trim();
+  if (val && !val.endsWith('/')) val += '/';
+  localStorage.setItem('mdv-basepath', val);
+  toggleSettings();
+}
+
+// ============================================
+// File handling
+// ============================================
+function handleFileInput(e) {
+  const file = e.target.files[0];
+  if (file) readFile(file);
+}
+
+function readFile(file) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    rawMarkdown = e.target.result;
+    currentFileName = file.name;
+    renderMarkdown(rawMarkdown, file.name);
+    updateUrl(file.name);
+  };
+  reader.readAsText(file);
+}
+
+// Drag & drop
+const dropZone = document.getElementById('dropZone');
+['dragenter','dragover'].forEach(evt => {
+  document.body.addEventListener(evt, e => { e.preventDefault(); e.stopPropagation(); });
+  if (dropZone) dropZone.addEventListener(evt, e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+});
+['dragleave','drop'].forEach(evt => {
+  if (dropZone) dropZone.addEventListener(evt, () => dropZone.classList.remove('drag-over'));
+});
+document.body.addEventListener('drop', e => {
+  e.preventDefault(); e.stopPropagation();
+  const file = e.dataTransfer.files[0];
+  if (file && /\.(md|markdown|mdx|txt|text)$/i.test(file.name)) readFile(file);
+});
+
+// Paste
+document.addEventListener('paste', e => {
+  if (document.getElementById('searchOverlay').classList.contains('show')) return;
+  const text = e.clipboardData.getData('text');
+  if (text && text.length > 10) { rawMarkdown = text; renderMarkdown(text, 'Pasted Content'); updateUrl('pasted'); }
+});
+
+// URL-based file loading
+function updateUrl(name) {
+  const url = new URL(window.location);
+  url.searchParams.set('file', name);
+  url.hash = '';
+  history.replaceState(null, '', url);
+  document.title = `${name} - Markdown Viewer`;
+}
+
+async function loadFromUrl() {
+  const url = new URL(window.location);
+  const filePath = url.searchParams.get('file');
+  if (!filePath) {
+    if (url.hash === '#demo') loadDemo();
+    return;
+  }
+
+  // Resolve path: try relative to server root, then with basepath
+  const basePath = localStorage.getItem('mdv-basepath') || '';
+  const pathsToTry = [filePath];
+  if (basePath) pathsToTry.push(basePath + filePath);
+
+  for (const p of pathsToTry) {
+    try {
+      const resp = await fetch(p);
+      if (resp.ok) {
+        rawMarkdown = await resp.text();
+        currentFileName = filePath.split('/').pop();
+        renderMarkdown(rawMarkdown, filePath);
+        return;
+      }
+    } catch (_) {}
+  }
+
+  // Could not fetch - show the path in title so user knows which file to open
+  document.getElementById('titleText').textContent = filePath.split('/').pop();
+  document.getElementById('breadcrumb').textContent = filePath;
+}
+
+// ============================================
+// Render markdown
+// ============================================
+function renderMarkdown(source, title) {
+  const body = document.getElementById('mdBody');
+  const welcome = document.getElementById('welcomeScreen');
+
+  // Extract narrations before rendering
+  const { narrations } = extractNarrations(source);
+  window._narrations = narrations;
+
+  // Pre-process math
+  const processed = renderMath(source);
+
+  // Render
+  body.innerHTML = md.render(processed);
+  body.style.display = 'block';
+  welcome.style.display = 'none';
+  document.getElementById('fabContainer').style.display = 'flex';
+  document.getElementById('foldBtn').style.display = '';
+  document.getElementById('ttsToggleBtn').style.display = '';
+
+  // Title
+  const name = (title || 'Untitled').split('/').pop();
+  const path = title && title.includes('/') ? title : '';
+  document.getElementById('titleText').textContent = name;
+  document.getElementById('breadcrumb').textContent = path;
+
+  // Reading stats
+  const text = body.textContent;
+  const words = text.split(/\s+/).filter(w => w.length > 0).length;
+  const mins = Math.max(1, Math.ceil(words / 230));
+  document.getElementById('readingMeta').textContent = `${words.toLocaleString()} words ~ ${mins} min read`;
+
+  // Post-process
+  addSectionToggles();
+  buildToc();
+  buildSearchIndex();
+  buildTtsSections();
+  renderMermaidDiagrams();
+  setupScrollSpy();
+  setupImageLightbox();
+  enhanceLinks();
+
+  // Show link-related toolbar buttons
+  document.getElementById('linksPanelBtn').style.display = '';
+
+  // Reset state
+  allCollapsed = false;
+  window.scrollTo({ top: 0 });
+}
+
+function escapeHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ============================================
+// Mermaid
+// ============================================
+async function renderMermaidDiagrams() {
+  const diagrams = document.querySelectorAll('.mermaid:not(.rendered)');
+  if (!diagrams.length) return;
+  const t = currentTheme === 'dark' ? 'dark' : 'default';
+  mermaid.initialize({ startOnLoad: false, theme: t, securityLevel: 'loose' });
+  for (const el of diagrams) {
+    const code = el.textContent;
+    const id = el.id || 'mermaid-' + Math.random().toString(36).slice(2);
+    try {
+      const { svg } = await mermaid.render(id + '-svg', code);
+      el.innerHTML = svg;
+      el.classList.add('rendered');
+    } catch (err) {
+      el.innerHTML = `<pre style="color:var(--accent-danger);font-size:0.82rem">Mermaid error: ${escapeHtml(err.message)}</pre>`;
+    }
+  }
+}
+
+// ============================================
+// Section toggle (collapsible headings)
+// ============================================
+const chevronSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
+
+function addSectionToggles() {
+  const body = document.getElementById('mdBody');
+  body.querySelectorAll('h1,h2,h3,h4').forEach(heading => {
+    const level = parseInt(heading.tagName[1]);
+
+    // Insert toggle button as first child
+    const btn = document.createElement('button');
+    btn.className = 'section-toggle';
+    btn.innerHTML = chevronSvg;
+    btn.setAttribute('aria-label', 'Toggle section');
+    btn.onclick = (e) => { e.stopPropagation(); toggleSection(heading, btn); };
+    heading.prepend(btn);
+
+    // Wrap following content
+    const wrapper = document.createElement('div');
+    wrapper.className = 'section-content';
+    wrapper.dataset.level = level;
+
+    let sib = heading.nextElementSibling;
+    while (sib) {
+      if (/^H[1-6]$/.test(sib.tagName) && parseInt(sib.tagName[1]) <= level) break;
+      const next = sib.nextElementSibling;
+      wrapper.appendChild(sib);
+      sib = next;
+    }
+    if (wrapper.children.length > 0) {
+      heading.insertAdjacentElement('afterend', wrapper);
+    } else {
+      btn.style.visibility = 'hidden';
+    }
+  });
+}
+
+function toggleSection(heading, btn) {
+  const content = heading.nextElementSibling;
+  if (!content || !content.classList.contains('section-content')) return;
+  const c = content.classList.toggle('collapsed');
+  btn.classList.toggle('collapsed', c);
+}
+
+function toggleAllSections() {
+  allCollapsed = !allCollapsed;
+  document.getElementById('mdBody').querySelectorAll('.section-toggle').forEach(b => b.classList.toggle('collapsed', allCollapsed));
+  document.getElementById('mdBody').querySelectorAll('.section-content').forEach(e => e.classList.toggle('collapsed', allCollapsed));
+}
+
+// ============================================
+// TOC
+// ============================================
+function buildToc() {
+  const body = document.getElementById('mdBody');
+  const headings = body.querySelectorAll('h1,h2,h3,h4,h5,h6');
+  const tocList = document.getElementById('tocList');
+  tocList.innerHTML = '';
+
+  if (headings.length === 0) {
+    document.getElementById('tocSidebar').classList.add('hidden');
+    document.getElementById('contentWrapper').classList.add('full-width');
+    return;
+  }
+
+  headings.forEach((h, i) => {
+    const level = parseInt(h.tagName[1]);
+    const text = h.textContent.replace(/[#]/g, '').trim();
+    if (!h.id) h.id = `heading-${i}`;
+    const li = document.createElement('li');
+    const a = document.createElement('a');
+    a.className = 'toc-link';
+    a.href = `#${h.id}`;
+    a.textContent = text;
+    a.dataset.level = level;
+    a.onclick = (e) => {
+      e.preventDefault();
+      document.getElementById(h.id).scrollIntoView({ behavior: 'smooth', block: 'start' });
+      document.getElementById('tocSidebar').classList.remove('mobile-show');
+    };
+    li.appendChild(a);
+    tocList.appendChild(li);
+  });
+}
+
+function toggleToc() {
+  const sb = document.getElementById('tocSidebar');
+  const wr = document.getElementById('contentWrapper');
+  if (window.innerWidth <= 900) {
+    sb.classList.toggle('mobile-show');
+  } else {
+    tocVisible = !tocVisible;
+    sb.classList.toggle('hidden', !tocVisible);
+    wr.classList.toggle('full-width', !tocVisible);
+  }
+}
+
+// ============================================
+// Scroll spy + breadcrumb
+// ============================================
+function setupScrollSpy() {
+  const links = document.querySelectorAll('.toc-link');
+  if (!links.length) return;
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const id = entry.target.id;
+        links.forEach(l => l.classList.toggle('active', l.getAttribute('href') === `#${id}`));
+        // Active TOC scroll
+        const active = document.querySelector('.toc-link.active');
+        if (active) active.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        // Breadcrumb
+        document.getElementById('breadcrumb').textContent = entry.target.textContent.replace(/#/g, '').trim();
+      }
+    });
+  }, { rootMargin: '-80px 0px -70% 0px', threshold: 0 });
+
+  document.getElementById('mdBody').querySelectorAll('h1,h2,h3,h4,h5,h6').forEach(h => observer.observe(h));
+}
+
+// ============================================
+// Search
+// ============================================
+function buildSearchIndex() {
+  searchIndex = [];
+  const body = document.getElementById('mdBody');
+  body.querySelectorAll('h1,h2,h3,h4,h5,h6').forEach(h => {
+    searchIndex.push({ type: 'heading', text: h.textContent.replace(/#/g,'').trim(), id: h.id, level: parseInt(h.tagName[1]) });
+  });
+  body.querySelectorAll('p,li,td,blockquote').forEach(el => {
+    const t = el.textContent.trim();
+    if (t.length > 15) {
+      let nearH = null, prev = el;
+      while (prev) {
+        prev = prev.previousElementSibling || (prev.parentElement !== body ? prev.parentElement : null);
+        if (prev && /^H[1-6]$/.test(prev.tagName)) { nearH = prev; break; }
+      }
+      searchIndex.push({ type: 'content', text: t.slice(0, 200), headingId: nearH?.id, headingText: nearH?.textContent.replace(/#/g,'').trim(), element: el });
+    }
+  });
+}
+
+function openSearch() {
+  document.getElementById('searchOverlay').classList.add('show');
+  const inp = document.getElementById('searchInput');
+  inp.value = ''; document.getElementById('searchResults').innerHTML = '';
+  searchFocusIdx = -1;
+  setTimeout(() => inp.focus(), 50);
+}
+function closeSearch() { document.getElementById('searchOverlay').classList.remove('show'); }
+
+function handleSearch(q) {
+  const res = document.getElementById('searchResults');
+  searchFocusIdx = -1;
+  if (!q || q.length < 2) { res.innerHTML = ''; return; }
+  const ql = q.toLowerCase();
+  const matches = searchIndex.filter(i => i.text.toLowerCase().includes(ql)).slice(0, 20);
+  res.innerHTML = matches.map((m, i) => {
+    const ht = highlightMatch(m.text, q);
+    if (m.type === 'heading') {
+      return `<div class="search-result-item" data-idx="${i}" onclick="goSearch(${i})"><span class="search-result-heading">${'#'.repeat(m.level)} ${ht}</span></div>`;
+    }
+    return `<div class="search-result-item" data-idx="${i}" onclick="goSearch(${i})"><span class="search-result-heading">${escapeHtml(m.headingText||'')}</span><span class="search-result-ctx">${ht}</span></div>`;
+  }).join('');
+  res._matches = matches;
+}
+
+function highlightMatch(text, q) {
+  const e = escapeHtml(text);
+  const qe = q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  return e.replace(new RegExp(`(${qe})`,'gi'),'<span class="search-match">$1</span>');
+}
+
+function goSearch(idx) {
+  const m = document.getElementById('searchResults')._matches?.[idx];
+  if (!m) return;
+  closeSearch();
+  if (m.type === 'heading' && m.id) {
+    document.getElementById(m.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } else if (m.headingId) {
+    document.getElementById(m.headingId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } else if (m.element) {
+    m.element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    m.element.style.background = 'var(--bg-tts-highlight)';
+    setTimeout(() => { m.element.style.background = ''; }, 2000);
+  }
+}
+
+function handleSearchKeys(e) {
+  const items = document.getElementById('searchResults').querySelectorAll('.search-result-item');
+  if (e.key === 'Escape') { closeSearch(); return; }
+  if (e.key === 'ArrowDown') { e.preventDefault(); searchFocusIdx = Math.min(searchFocusIdx+1, items.length-1); items.forEach((el,i)=>el.classList.toggle('focused',i===searchFocusIdx)); items[searchFocusIdx]?.scrollIntoView({block:'nearest'}); }
+  if (e.key === 'ArrowUp') { e.preventDefault(); searchFocusIdx = Math.max(searchFocusIdx-1, 0); items.forEach((el,i)=>el.classList.toggle('focused',i===searchFocusIdx)); items[searchFocusIdx]?.scrollIntoView({block:'nearest'}); }
+  if (e.key === 'Enter' && searchFocusIdx >= 0) goSearch(searchFocusIdx);
+}
+
+// ============================================
+// Image lightbox
+// ============================================
+function setupImageLightbox() {
+  document.getElementById('mdBody').querySelectorAll('img').forEach(img => {
+    img.addEventListener('click', () => {
+      document.getElementById('lightboxImg').src = img.src;
+      document.getElementById('lightbox').classList.add('show');
+    });
+  });
+}
+function closeLightbox() { document.getElementById('lightbox').classList.remove('show'); }
+
+// ============================================
+// Link enhancement
+// ============================================
+const LINK_TYPES = {
+  github:  { label: 'GitHub', icon: '&#9733;', color: 'var(--text-primary)' },
+  npm:     { label: 'npm', icon: '&#9634;', color: '#cb3837' },
+  docs:    { label: 'Docs', icon: '&#128214;', color: 'var(--accent-secondary)' },
+  email:   { label: 'Email', icon: '&#9993;', color: 'var(--accent-warn)' },
+  anchor:  { label: 'Section', icon: '&#167;', color: 'var(--accent)' },
+  file:    { label: 'File', icon: '&#128196;', color: 'var(--text-secondary)' },
+  external:{ label: 'External', icon: '&#8599;', color: 'var(--text-link)' },
+};
+
+function detectLinkType(href) {
+  if (!href) return 'external';
+  if (href.startsWith('#')) return 'anchor';
+  if (href.startsWith('mailto:')) return 'email';
+  if (/\.(md|txt|pdf|doc|csv|json|yaml|yml)$/i.test(href)) return 'file';
+  if (/github\.com|gitlab\.com/i.test(href)) return 'github';
+  if (/npmjs\.com|npm\.im/i.test(href)) return 'npm';
+  if (/docs\.|documentation|readme|wiki|\.dev|\.io\/docs/i.test(href)) return 'docs';
+  return 'external';
+}
+
+function enhanceLinks() {
+  const body = document.getElementById('mdBody');
+  const allLinks = [];
+
+  body.querySelectorAll('a:not(.header-anchor)').forEach(a => {
+    const href = a.getAttribute('href') || '';
+    const type = detectLinkType(href);
+    const info = LINK_TYPES[type];
+
+    // Add type as data attribute
+    a.dataset.linkType = type;
+
+    // Add small inline icon
+    if (type !== 'anchor') {
+      const icon = document.createElement('span');
+      icon.className = 'link-icon';
+      icon.innerHTML = info.icon;
+      icon.style.color = info.color;
+      a.appendChild(icon);
+    }
+
+    // External links: open in new tab
+    if (type !== 'anchor' && type !== 'file' && href.startsWith('http')) {
+      a.setAttribute('target', '_blank');
+      a.setAttribute('rel', 'noopener noreferrer');
+    }
+
+    // Collect for links panel
+    allLinks.push({ href, text: a.textContent.replace(/[^\w\s.-]/g, '').trim(), type, element: a });
+
+    // Tooltip on hover
+    a.addEventListener('mouseenter', (e) => showLinkTooltip(e, a, href, type));
+    a.addEventListener('mouseleave', hideLinkTooltip);
+    a.addEventListener('mousemove', moveLinkTooltip);
+  });
+
+  // Convert standalone links (sole child of a <p>) into link chips
+  body.querySelectorAll('p').forEach(p => {
+    const children = Array.from(p.childNodes).filter(n =>
+      n.nodeType !== 3 || n.textContent.trim().length > 0
+    );
+    if (children.length === 1 && children[0].tagName === 'A') {
+      const a = children[0];
+      const href = a.getAttribute('href') || '';
+      const type = detectLinkType(href);
+      if (type === 'anchor') return; // Don't chip internal anchors
+
+      const info = LINK_TYPES[type];
+      const chip = document.createElement('a');
+      chip.className = 'link-chip';
+      chip.href = href;
+      if (href.startsWith('http')) {
+        chip.target = '_blank';
+        chip.rel = 'noopener noreferrer';
+      }
+
+      const chipIcon = document.createElement('div');
+      chipIcon.className = 'link-chip-icon';
+      chipIcon.innerHTML = info.icon;
+
+      const chipBody = document.createElement('div');
+      chipBody.className = 'link-chip-body';
+
+      const chipTitle = document.createElement('span');
+      chipTitle.className = 'link-chip-title';
+      chipTitle.textContent = a.textContent.replace(/[&#\d;]+$/g, '').trim() || href;
+
+      const chipUrl = document.createElement('span');
+      chipUrl.className = 'link-chip-url';
+      try {
+        const u = new URL(href, window.location.href);
+        chipUrl.textContent = u.host + u.pathname;
+      } catch { chipUrl.textContent = href; }
+
+      const chipBadge = document.createElement('span');
+      chipBadge.className = 'link-chip-badge';
+      chipBadge.textContent = info.label;
+
+      chipBody.appendChild(chipTitle);
+      chipBody.appendChild(chipUrl);
+      chip.appendChild(chipIcon);
+      chip.appendChild(chipBody);
+      chip.appendChild(chipBadge);
+      p.replaceWith(chip);
+    }
+  });
+
+  // Build links panel content
+  buildLinksPanel(allLinks);
+}
+
+// Link tooltip
+let tooltipHideTimer = null;
+
+function showLinkTooltip(e, anchor, href, type) {
+  clearTimeout(tooltipHideTimer);
+  const tt = document.getElementById('linkTooltip');
+  const info = LINK_TYPES[type];
+
+  document.getElementById('linkTooltipIcon').innerHTML = info.icon;
+  document.getElementById('linkTooltipBadge').textContent = info.label;
+
+  // Format URL nicely
+  let display = href;
+  try {
+    if (href.startsWith('http')) {
+      const u = new URL(href);
+      display = u.host + (u.pathname.length > 1 ? u.pathname : '');
+      if (display.length > 55) display = display.slice(0, 52) + '...';
+    } else if (href.startsWith('mailto:')) {
+      display = href.replace('mailto:', '');
+    } else if (href.startsWith('#')) {
+      display = 'Jump to: ' + href.slice(1).replace(/-/g, ' ');
+    }
+  } catch {}
+  document.getElementById('linkTooltipText').textContent = display;
+
+  // Store href for copy
+  tt.dataset.href = href;
+
+  // Position
+  const rect = anchor.getBoundingClientRect();
+  tt.style.left = Math.min(rect.left, window.innerWidth - 420) + 'px';
+  tt.style.top = (rect.bottom + 6) + 'px';
+  tt.classList.add('visible');
+}
+
+function moveLinkTooltip(e) {
+  // tooltip follows cursor X slightly
+}
+
+function hideLinkTooltip() {
+  tooltipHideTimer = setTimeout(() => {
+    document.getElementById('linkTooltip').classList.remove('visible');
+  }, 150);
+}
+
+// Keep tooltip visible when hovering over it
+document.getElementById('linkTooltip').addEventListener('mouseenter', () => clearTimeout(tooltipHideTimer));
+document.getElementById('linkTooltip').addEventListener('mouseleave', hideLinkTooltip);
+
+function copyLinkUrl(e) {
+  e.stopPropagation();
+  const href = document.getElementById('linkTooltip').dataset.href;
+  const btn = document.getElementById('linkTooltipCopy');
+  navigator.clipboard.writeText(href).then(() => {
+    btn.textContent = 'Copied!';
+    setTimeout(() => { btn.textContent = 'Copy'; }, 1200);
+  });
+}
+
+// Links panel
+function toggleLinksPanel() {
+  document.getElementById('linksPanel').classList.toggle('show');
+}
+
+function buildLinksPanel(links) {
+  const container = document.getElementById('linksPanelContent');
+  container.innerHTML = '';
+  if (!links.length) { container.innerHTML = '<p style="font-size:0.8rem;color:var(--text-tertiary)">No links found.</p>'; return; }
+
+  // Group by type
+  const groups = {};
+  for (const link of links) {
+    if (!groups[link.type]) groups[link.type] = [];
+    groups[link.type].push(link);
+  }
+
+  const order = ['external', 'github', 'docs', 'npm', 'file', 'anchor', 'email'];
+  for (const type of order) {
+    const items = groups[type];
+    if (!items || !items.length) continue;
+    const info = LINK_TYPES[type];
+
+    const group = document.createElement('div');
+    group.className = 'links-panel-group';
+
+    const title = document.createElement('div');
+    title.className = 'links-panel-group-title';
+    title.innerHTML = `${info.icon} ${info.label} <span class="links-panel-group-count">${items.length}</span>`;
+    group.appendChild(title);
+
+    // Deduplicate by href
+    const seen = new Set();
+    for (const item of items) {
+      if (seen.has(item.href)) continue;
+      seen.add(item.href);
+
+      const a = document.createElement('a');
+      a.className = 'links-panel-item';
+      a.href = item.href;
+      if (item.href.startsWith('http')) { a.target = '_blank'; a.rel = 'noopener noreferrer'; }
+
+      const label = document.createElement('span');
+      label.textContent = item.text || item.href;
+
+      const url = document.createElement('span');
+      url.className = 'links-panel-item-url';
+      try {
+        const u = new URL(item.href, window.location.href);
+        url.textContent = u.host + u.pathname;
+      } catch { url.textContent = item.href; }
+
+      a.appendChild(label);
+      if (type !== 'anchor') a.appendChild(url);
+
+      // Click anchor links: scroll to target
+      if (type === 'anchor') {
+        a.addEventListener('click', (e) => {
+          e.preventDefault();
+          const target = document.getElementById(item.href.slice(1));
+          if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          toggleLinksPanel();
+        });
+      }
+
+      group.appendChild(a);
+    }
+    container.appendChild(group);
+  }
+}
+
+// ============================================
+// Copy code
+// ============================================
+function copyCode(btn) {
+  const code = btn.closest('pre').querySelector('code');
+  navigator.clipboard.writeText(code.textContent).then(() => {
+    btn.textContent = 'Copied!'; btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1500);
+  });
+}
+
+// ============================================
+// TTS (Text-to-Speech) Engine
+// ============================================
+let ttsSections = [];
+let ttsCurrentIdx = 0;
+let ttsIsPlaying = false;
+let ttsRate = 1.0;
+let ttsUtterance = null;
+const ttsRates = [0.75, 1, 1.25, 1.5, 1.75, 2];
+let ttsRateIdx = 1;
+let ttsKeepAliveTimer = null;
+const isAndroid = /android/i.test(navigator.userAgent);
+
+// Chrome workaround: speechSynthesis stops after ~15s with Google voices.
+// Two strategies: (1) chunk text into short sentences, (2) pause/resume keepalive.
+let ttsChunks = [];
+let ttsChunkIdx = 0;
+
+function buildTtsSections() {
+  ttsSections = [];
+  const body = document.getElementById('mdBody');
+  const narrations = window._narrations || [];
+
+  // Walk top-level children and section-content children
+  function extractText(container) {
+    const items = [];
+    for (const child of container.children) {
+      if (/^H[1-6]$/.test(child.tagName)) {
+        items.push({ type: 'heading', text: child.textContent.replace(/#/g, '').trim(), element: child });
+      } else if (child.classList.contains('section-content')) {
+        items.push(...extractText(child));
+      } else if (child.classList.contains('mermaid-wrapper')) {
+        // Check for narration
+        const narr = findNarrationFor(child);
+        if (narr) items.push({ type: 'narration', text: narr, element: child });
+        else items.push({ type: 'skip', text: '[diagram]', element: child });
+      } else if (child.tagName === 'PRE') {
+        items.push({ type: 'code', text: 'Code block: ' + (child.querySelector('.code-header span')?.textContent || ''), element: child });
+      } else if (child.tagName === 'TABLE') {
+        const narr = findNarrationFor(child);
+        if (narr) items.push({ type: 'narration', text: narr, element: child });
+        else items.push({ type: 'table', text: child.textContent.trim().slice(0, 300), element: child });
+      } else {
+        const t = child.textContent.trim();
+        if (t.length > 0) items.push({ type: 'text', text: t, element: child });
+      }
+    }
+    return items;
+  }
+
+  const raw = extractText(body);
+
+  // Group into sections (heading + following content)
+  let current = { heading: 'Introduction', items: [], elements: [] };
+  for (const item of raw) {
+    if (item.type === 'heading') {
+      if (current.items.length > 0) ttsSections.push(current);
+      current = { heading: item.text, items: [], elements: [] };
+      current.items.push(item.text + '.');
+      current.elements.push(item.element);
+    } else if (item.type === 'skip') {
+      // skip diagrams without narration
+    } else {
+      current.items.push(item.text);
+      current.elements.push(item.element);
+    }
+  }
+  if (current.items.length > 0) ttsSections.push(current);
+}
+
+function findNarrationFor(element) {
+  // Walk backward through raw markdown narrations
+  // Check HTML comment nodes before this element
+  const narrations = window._narrations || [];
+  if (!narrations.length) return null;
+
+  // Simple heuristic: check if the element's previous sibling is a comment node
+  // or look in raw markdown for <!-- narrate: --> before mermaid blocks
+  // Since HTML comments become DOM comment nodes:
+  let node = element.previousSibling;
+  while (node) {
+    if (node.nodeType === 8) { // Comment node
+      const text = node.textContent.trim();
+      if (text.toLowerCase().startsWith('narrate:')) {
+        return text.slice(8).trim();
+      }
+    }
+    if (node.nodeType === 1) break; // Stop at previous element
+    node = node.previousSibling;
+  }
+
+  // Also check parent's previous sibling for section-wrapped content
+  if (element.parentElement?.classList.contains('section-content')) {
+    node = element.parentElement.previousSibling;
+    while (node) {
+      if (node.nodeType === 8) {
+        const text = node.textContent.trim();
+        if (text.toLowerCase().startsWith('narrate:')) return text.slice(8).trim();
+      }
+      if (node.nodeType === 1) break;
+      node = node.previousSibling;
+    }
+  }
+
+  return null;
+}
+
+function ttsToggle() {
+  const player = document.getElementById('ttsPlayer');
+  if (player.classList.contains('show')) {
+    ttsStop();
+  } else {
+    player.classList.add('show');
+    document.documentElement.style.setProperty('--tts-height', '64px');
+    updateTtsUI();
+  }
+}
+
+function ttsPlayPause() {
+  if (!ttsSections.length) return;
+  if (ttsIsPlaying) {
+    ttsPause();
+  } else {
+    ttsPlay();
+  }
+}
+
+function ttsPlay() {
+  if (!ttsSections.length) return;
+  if (speechSynthesis.paused) {
+    speechSynthesis.resume();
+    ttsIsPlaying = true;
+    updateTtsPlayIcon();
+    return;
+  }
+
+  ttsIsPlaying = true;
+  updateTtsPlayIcon();
+  speakSection(ttsCurrentIdx);
+}
+
+function speakSection(idx) {
+  if (idx >= ttsSections.length) {
+    ttsIsPlaying = false;
+    updateTtsPlayIcon();
+    return;
+  }
+  ttsCurrentIdx = idx;
+  const section = ttsSections[idx];
+
+  // Highlight elements
+  clearTtsHighlights();
+  section.elements.forEach(el => el?.classList.add('tts-active'));
+
+  // Scroll to first element
+  if (section.elements[0]) {
+    section.elements[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  // Chunk text into sentences for Chrome workaround
+  const fullText = section.items.join(' ');
+  ttsChunks = chunkText(fullText, 180); // ~180 chars per chunk
+  ttsChunkIdx = 0;
+
+  updateTtsUI();
+  speakNextChunk();
+}
+
+function chunkText(text, maxLen) {
+  const chunks = [];
+  // Split by sentence boundaries
+  const sentences = text.match(/[^.!?\n]+[.!?\n]*/g) || [text];
+  let current = '';
+  for (const s of sentences) {
+    if ((current + s).length > maxLen && current.length > 0) {
+      chunks.push(current.trim());
+      current = s;
+    } else {
+      current += s;
+    }
+  }
+  if (current.trim()) chunks.push(current.trim());
+  return chunks.length ? chunks : [''];
+}
+
+function ttsStartKeepAlive() {
+  ttsStopKeepAlive();
+  if (isAndroid) return; // Android treats pause() as cancel
+  ttsKeepAliveTimer = setInterval(() => {
+    if (!speechSynthesis.speaking) { ttsStopKeepAlive(); return; }
+    speechSynthesis.pause();
+    speechSynthesis.resume();
+  }, 12000); // Must be under 15s (Chrome bug)
+}
+
+function ttsStopKeepAlive() {
+  if (ttsKeepAliveTimer) { clearInterval(ttsKeepAliveTimer); ttsKeepAliveTimer = null; }
+}
+
+function speakNextChunk() {
+  if (!ttsIsPlaying) return;
+  if (ttsChunkIdx >= ttsChunks.length) {
+    ttsStopKeepAlive();
+    clearTtsHighlights();
+    speakSection(ttsCurrentIdx + 1);
+    return;
+  }
+
+  speechSynthesis.cancel(); // Clear any pending
+  ttsUtterance = new SpeechSynthesisUtterance(ttsChunks[ttsChunkIdx]);
+  ttsUtterance.rate = ttsRate;
+  ttsUtterance.onend = () => {
+    ttsChunkIdx++;
+    if (ttsSections.length > 0) {
+      const sectionProgress = ttsChunks.length > 1 ? ttsChunkIdx / ttsChunks.length : 1;
+      const overall = (ttsCurrentIdx + sectionProgress) / ttsSections.length;
+      document.getElementById('ttsProgressFill').style.width = (overall * 100) + '%';
+    }
+    speakNextChunk();
+  };
+  ttsUtterance.onerror = (e) => {
+    if (e.error !== 'canceled') { ttsChunkIdx++; speakNextChunk(); }
+  };
+  speechSynthesis.speak(ttsUtterance);
+  ttsStartKeepAlive();
+}
+
+function ttsPause() {
+  ttsStopKeepAlive();
+  if (isAndroid) {
+    // Android: pause = cancel, so we just track position
+    speechSynthesis.cancel();
+  } else {
+    speechSynthesis.pause();
+  }
+  ttsIsPlaying = false;
+  updateTtsPlayIcon();
+}
+
+function ttsStop() {
+  ttsStopKeepAlive();
+  speechSynthesis.cancel();
+  ttsIsPlaying = false;
+  ttsCurrentIdx = 0;
+  clearTtsHighlights();
+  document.getElementById('ttsPlayer').classList.remove('show');
+  document.documentElement.style.setProperty('--tts-height', '0px');
+  updateTtsPlayIcon();
+}
+
+// Clean up on page unload to avoid orphaned speech
+window.addEventListener('beforeunload', () => { ttsStopKeepAlive(); speechSynthesis.cancel(); });
+
+function ttsNext() {
+  ttsStopKeepAlive(); speechSynthesis.cancel(); clearTtsHighlights();
+  if (ttsCurrentIdx < ttsSections.length - 1) speakSection(ttsCurrentIdx + 1);
+}
+
+function ttsPrev() {
+  ttsStopKeepAlive(); speechSynthesis.cancel(); clearTtsHighlights();
+  speakSection(ttsCurrentIdx > 0 ? ttsCurrentIdx - 1 : 0);
+}
+
+function ttsCycleSpeed() {
+  ttsRateIdx = (ttsRateIdx + 1) % ttsRates.length;
+  ttsRate = ttsRates[ttsRateIdx];
+  document.getElementById('ttsSpeedBtn').textContent = ttsRate + 'x';
+  if (ttsIsPlaying) { ttsStopKeepAlive(); speechSynthesis.cancel(); speakNextChunk(); }
+}
+
+function ttsSeekClick(e) {
+  const bar = document.getElementById('ttsProgressBar');
+  const pct = e.offsetX / bar.clientWidth;
+  const idx = Math.floor(pct * ttsSections.length);
+  if (idx >= 0 && idx < ttsSections.length) {
+    speechSynthesis.cancel();
+    clearTtsHighlights();
+    ttsIsPlaying = true;
+    updateTtsPlayIcon();
+    speakSection(idx);
+  }
+}
+
+function updateTtsUI() {
+  const section = ttsSections[ttsCurrentIdx];
+  document.getElementById('ttsSectionLabel').textContent = section
+    ? `${ttsCurrentIdx + 1}/${ttsSections.length}: ${section.heading}`
+    : 'Ready';
+  const pct = ttsSections.length ? (ttsCurrentIdx / ttsSections.length * 100) : 0;
+  document.getElementById('ttsProgressFill').style.width = pct + '%';
+}
+
+function updateTtsPlayIcon() {
+  document.getElementById('ttsPlayIcon').style.display = ttsIsPlaying ? 'none' : '';
+  document.getElementById('ttsPauseIcon').style.display = ttsIsPlaying ? '' : 'none';
+}
+
+function clearTtsHighlights() {
+  document.querySelectorAll('.tts-active').forEach(el => el.classList.remove('tts-active'));
+}
+
+// ============================================
+// Scroll + progress
+// ============================================
+window.addEventListener('scroll', () => {
+  const st = window.scrollY;
+  const dh = document.body.scrollHeight - window.innerHeight;
+  const pct = dh > 0 ? (st / dh) * 100 : 0;
+  document.getElementById('progressBar').style.width = pct + '%';
+  const fabUp = document.getElementById('fabUp');
+  const fabDown = document.getElementById('fabDown');
+  if (fabUp) fabUp.classList.toggle('hidden', st < 200);
+  if (fabDown) fabDown.classList.toggle('hidden', st > dh - 200);
+}, { passive: true });
+
+// ============================================
+// Keyboard shortcuts
+// ============================================
+function closeShortcuts() { document.getElementById('shortcutsOverlay').classList.remove('show'); }
+
+document.addEventListener('keydown', e => {
+  const mod = e.ctrlKey || e.metaKey;
+
+  // Don't capture if typing in an input
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+    if (e.key === 'Escape') { closeSearch(); closeShortcuts(); }
+    return;
+  }
+
+  if (mod && e.key === 'k') { e.preventDefault(); document.getElementById('searchOverlay').classList.contains('show') ? closeSearch() : openSearch(); }
+  if (mod && e.key === 'b') { e.preventDefault(); toggleToc(); }
+  if (mod && e.key === '\\') { e.preventDefault(); toggleWidth(); }
+  if (mod && e.key === '.') { e.preventDefault(); toggleFocus(); }
+  if (mod && e.shiftKey && e.key === 'F') { e.preventDefault(); toggleAllSections(); }
+  if (mod && e.shiftKey && e.key === 'R') { e.preventDefault(); ttsToggle(); }
+  if (mod && e.key === 'o') { e.preventDefault(); document.getElementById('fileInput').click(); }
+  if (e.key === '?' && !mod) {
+    e.preventDefault();
+    const ov = document.getElementById('shortcutsOverlay');
+    ov.classList.contains('show') ? closeShortcuts() : ov.classList.add('show');
+  }
+  if (e.key === 'Escape') { closeSearch(); closeShortcuts(); closeLightbox(); }
+});
+
+// ============================================
+// Init
+// ============================================
+setTheme(currentTheme);
+applyFontSize();
+loadFromUrl();
+
+// ============================================
+// Demo content
+// ============================================
+function loadDemo() {
+  const demo = `# Markdown Viewer Demo
+
+Welcome to the **Advanced Markdown Viewer**. This demo showcases all features.
+
+## Text Formatting
+
+Regular text with **bold**, *italic*, ~~strikethrough~~, ==highlighted==, ~subscript~, ^superscript^, and \`inline code\`.
+
+> Blockquotes support **nested** formatting and multiple paragraphs.
+>
+> Like this second paragraph.
+
+## Lists & Tasks
+
+- Item one
+  - Nested item A
+  - Nested item B
+- Item two
+
+### Task Lists
+- [x] Complete the markdown parser
+- [x] Add syntax highlighting
+- [ ] Ship to production
+
+## Code
+
+\`\`\`javascript
+function fibonacci(n) {
+  if (n <= 1) return n;
+  return fibonacci(n - 1) + fibonacci(n - 2);
+}
+
+const sequence = Array.from({ length: 10 }, (_, i) => fibonacci(i));
+console.log(sequence);
+\`\`\`
+
+\`\`\`python
+def fibonacci():
+    """Infinite Fibonacci generator."""
+    a, b = 0, 1
+    while True:
+        yield a
+        a, b = b, a + b
+
+gen = fibonacci()
+print([next(gen) for _ in range(10)])
+\`\`\`
+
+## Tables
+
+| Feature | Status | Priority |
+|---------|--------|----------|
+| Markdown rendering | Done | High |
+| Mermaid diagrams | Done | High |
+| TTS narration | Done | High |
+| Section collapse | Done | Medium |
+| Focus mode | Done | Medium |
+
+## Diagrams with Narration
+
+<!-- narrate: This flowchart shows the document processing pipeline. A file is opened, then parsed as markdown, then rendered as HTML with syntax highlighting, table of contents, and mermaid diagrams. Finally scroll spy is initialized. -->
+
+\`\`\`mermaid
+graph TD
+    A[Open File] --> B{Parse Markdown}
+    B --> C[Render HTML]
+    C --> D[Build TOC]
+    C --> E[Render Mermaid]
+    C --> F[Highlight Code]
+    D --> G[Scroll Spy]
+    E --> G
+    F --> G
+    G --> H[Ready!]
+\`\`\`
+
+The \`<!-- narrate: ... -->\` comment above the mermaid block provides a spoken description for TTS. It's invisible in every markdown viewer except this one.
+
+## Math
+
+Inline: $E = mc^2$
+
+Block:
+
+$$\\int_{-\\infty}^{\\infty} e^{-x^2} dx = \\sqrt{\\pi}$$
+
+## Collapsible Sections
+
+<details>
+<summary>Click to expand</summary>
+
+Hidden content with **formatting**, \`code\`, and lists:
+
+- Item A
+- Item B
+
+\`\`\`json
+{ "hidden": true, "expandable": true }
+\`\`\`
+</details>
+
+## Keyboard Shortcuts
+
+Press \`?\` to see all shortcuts. Key ones:
+
+- **Ctrl+K** Search
+- **Ctrl+B** Toggle TOC
+- **Ctrl+\\\\** Toggle width
+- **Ctrl+.** Focus mode
+- **Ctrl+Shift+R** Read aloud (TTS)
+
+## TTS Narration Format
+
+To make diagrams, tables, or images speakable, add an HTML comment before them:
+
+\`\`\`markdown
+<!-- narrate: This diagram shows the auth flow from login to token. -->
+\\\`\\\`\\\`mermaid
+graph LR
+    Login --> Validate --> Token
+\\\`\\\`\\\`
+\`\`\`
+
+The \`<!-- narrate: -->\` comment is a standard HTML comment, invisible in GitHub, VS Code, Obsidian, and every other viewer. Only this viewer extracts it for TTS.
+
+## Links
+
+Links are auto-detected by type and enhanced with icons, tooltips, and more. Hover any link to see.
+
+**Inline links** (different types):
+- GitHub: [marked.js](https://github.com/markedjs/marked) for markdown parsing
+- npm: [markdown-it](https://www.npmjs.com/package/markdown-it) plugin ecosystem
+- Docs: [MDN Web Docs](https://developer.mozilla.org/en-US/docs/Web) reference
+- Email: [hello@example.com](mailto:hello@example.com) for feedback
+- Internal: [Jump to Code section](#code)
+- File: [README.md](./README.md)
+- External: [Example Site](https://example.com)
+
+**Standalone links** become rich cards:
+
+[https://github.com/markedjs/marked](https://github.com/markedjs/marked)
+
+[https://developer.mozilla.org/en-US/docs/Web/API/SpeechSynthesis](https://developer.mozilla.org/en-US/docs/Web/API/SpeechSynthesis)
+
+Use the **links panel** (chain icon in toolbar) to see all links indexed by type.
+
+---
+
+## Footnotes
+
+Text with a footnote[^1].
+
+[^1]: This is the footnote content.
+
+---
+
+*End of demo. Open your own files or use \`?file=path/to/file.md\` in the URL.*
+`;
+  rawMarkdown = demo;
+  renderMarkdown(demo, 'Demo Document');
+}
+</script>
+</body>
+</html>
