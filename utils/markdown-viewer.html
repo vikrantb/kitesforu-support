@@ -1551,7 +1551,7 @@ body.kfu-sidebar-open .content-wrapper { padding-right: 380px; }
     </button>
 
     <!-- Open file via FSA (writable) -->
-    <button class="btn btn-icon" id="kfuOpenBtn" onclick="kfuPickFile()" title="Open .md (writable, Chromium)">
+    <button class="btn btn-icon" id="kfuOpenBtn" onclick="kfuOpenOrSetSaveLocation()" title="Open .md / set save location (Chromium)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
     </button>
 
@@ -1927,6 +1927,11 @@ function readFile(file) {
     try {
       rawMarkdown = ev.target.result;
       currentFileName = file.name;
+      // Drag-drop / file input has no writable handle; clear any stale one.
+      if (typeof kfuFileHandle !== 'undefined') {
+        kfuFileHandle = null;
+        kfuSetStatus && kfuSetStatus('No save location set — click 📄 or save once', 'error');
+      }
       renderMarkdown(rawMarkdown, file.name);
       updateUrl(file.name);
     } catch (err) {
@@ -3659,29 +3664,79 @@ async function kfuOpenWithHandle(handle) {
   renderMarkdown(text, file.name);
 }
 
-async function kfuSaveFile(silent) {
-  if (!kfuFileHandle) {
-    // Fallback: download the modified text
-    return kfuDownloadFallback();
+// Prompt for save location via showSaveFilePicker. Must be invoked from a
+// user-gesture chain (button click, etc.) — Chromium blocks otherwise.
+// Returns the handle (now also stored in kfuFileHandle + IDB), or null.
+async function kfuEnsureWritableHandle() {
+  if (kfuFileHandle) {
+    if ((await kfuFileHandle.queryPermission({ mode: 'readwrite' })) !== 'granted') {
+      try {
+        const p = await kfuFileHandle.requestPermission({ mode: 'readwrite' });
+        if (p !== 'granted') return null;
+      } catch (e) { return null; }
+    }
+    return kfuFileHandle;
   }
-  if ((await kfuFileHandle.queryPermission({ mode: 'readwrite' })) !== 'granted') {
+  if (!('showSaveFilePicker' in window)) return null;
+  try {
+    const h = await window.showSaveFilePicker({
+      suggestedName: currentFileName || 'document.md',
+      types: [{
+        description: 'Markdown',
+        accept: { 'text/plain': ['.md', '.markdown', '.txt'] }
+      }]
+    });
+    kfuFileHandle = h;
+    try { await kfuPutHandle('current', h); } catch (e) {}
+    return h;
+  } catch (e) {
+    if (e.name !== 'AbortError') console.error('kfuEnsureWritableHandle error:', e);
+    return null;
+  }
+}
+
+async function kfuSaveFile(opts) {
+  opts = opts || {};
+  const allowPrompt = opts.allowPrompt === true;
+  const silent = opts.silent === true;
+  if (kfuSaveTimer) { clearTimeout(kfuSaveTimer); kfuSaveTimer = null; }
+  // No handle: try to get one (only if we're in gesture)
+  let handle = kfuFileHandle;
+  if (!handle && allowPrompt) handle = await kfuEnsureWritableHandle();
+  if (!handle) {
+    if (!('showSaveFilePicker' in window)) {
+      // Firefox/Safari — download is the only option
+      kfuShowToast('Browser does not support in-place save. Downloading instead.', 'error');
+      return kfuDownloadFallback();
+    }
+    // Chromium without handle: refuse to silently download. Auto-save will
+    // park here until the user provides a save location.
+    kfuSetStatus('Click 📄 or Cmd+S to set save location', 'error');
+    kfuDirty = true;
+    return false;
+  }
+  if ((await handle.queryPermission({ mode: 'readwrite' })) !== 'granted') {
+    if (!allowPrompt) {
+      kfuSetStatus('Click 📄 or Cmd+S to grant write permission', 'error');
+      return false;
+    }
     try {
-      const p = await kfuFileHandle.requestPermission({ mode: 'readwrite' });
+      const p = await handle.requestPermission({ mode: 'readwrite' });
       if (p !== 'granted') { kfuSetStatus('Permission denied', 'error'); return false; }
     } catch (e) {
-      kfuSetStatus('Click anywhere to grant', 'error');
+      kfuSetStatus('Permission required', 'error');
       return false;
     }
   }
   const text = kfuSerialize(rawMarkdown, kfuComments);
   rawMarkdown = text;
   try {
-    const w = await kfuFileHandle.createWritable();
+    const w = await handle.createWritable();
     await w.write(text);
     await w.close();
     kfuDirty = false;
     kfuLastSavedAt = Date.now();
-    if (!silent) kfuSetStatus('Saved');
+    if (!silent) kfuSetStatus('Saved ✓');
     setTimeout(() => { if (Date.now() - kfuLastSavedAt > 2500) kfuSetStatus(''); }, 3000);
     return true;
   } catch (e) {
@@ -3706,9 +3761,9 @@ function kfuDownloadFallback() {
 
 function kfuScheduleSave() {
   kfuDirty = true;
-  kfuSetStatus('Saving…', 'saving');
+  if (kfuFileHandle) kfuSetStatus('Saving…', 'saving');
   if (kfuSaveTimer) clearTimeout(kfuSaveTimer);
-  kfuSaveTimer = setTimeout(() => kfuSaveFile(), 1500);
+  kfuSaveTimer = setTimeout(() => kfuSaveFile({ allowPrompt: false }), 1500);
 }
 
 function kfuSetStatus(text, kind) {
@@ -3891,8 +3946,21 @@ async function kfuShowAddPopup(elem, selectionText) {
   pop.querySelector('.kfu-add-save').onclick = async () => {
     const body = ta.value.trim();
     if (!body) { pop.remove(); return; }
+    // EnsureWritableHandle inside the user-gesture chain so showSaveFilePicker
+    // (if needed) can fire. After the picker, we still have an active gesture
+    // for the followup createWritable() call.
+    if (!kfuFileHandle && 'showSaveFilePicker' in window) {
+      const h = await kfuEnsureWritableHandle();
+      if (!h) {
+        // User cancelled the picker — keep popup open so they can retry.
+        kfuShowToast('Save cancelled. Pick a location to enable inline save.', 'error');
+        return;
+      }
+    }
     pop.remove();
     await kfuAddComment(elem, selectionText, body);
+    // Force an immediate save (we just acquired a gesture-fresh handle).
+    await kfuSaveFile({ allowPrompt: false });
   };
   ta.addEventListener('keydown', (e) => {
     if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') pop.querySelector('.kfu-add-save').click();
@@ -4078,11 +4146,11 @@ document.addEventListener('keydown', (e) => {
     e.preventDefault();
     kfuToggleSidebar();
   }
-  // Ctrl/Cmd+S — save
+  // Ctrl/Cmd+S — save (prompt for location if no handle yet)
   if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
-    if (kfuFileHandle) {
+    if (rawMarkdown) {
       e.preventDefault();
-      kfuSaveFile();
+      kfuSaveFile({ allowPrompt: true });
     }
   }
 });
@@ -4117,8 +4185,27 @@ window.addEventListener('load', async () => {
   } catch (e) { /* IDB unavailable, ignore */ }
 });
 
+// Smart open/save-location button: if no file is loaded, opens one
+// (writable). If a file is already loaded but no save location yet, opens
+// the Save dialog so the user pins where future saves go.
+async function kfuOpenOrSetSaveLocation() {
+  if (rawMarkdown && !kfuFileHandle) {
+    // File loaded via drag-drop / paste / URL — pin the save location now.
+    const h = await kfuEnsureWritableHandle();
+    if (h) {
+      kfuShowToast('Save location set to ' + (h.name || 'file') + '. Auto-save active.');
+      // Save current state immediately so the file on disk now contains comments.
+      await kfuSaveFile({ allowPrompt: false });
+    }
+  } else {
+    // No file or wants to open a different one
+    await kfuPickFile();
+  }
+}
+
 // Expose handlers used by inline onclick attributes
 window.kfuPickFile = kfuPickFile;
+window.kfuOpenOrSetSaveLocation = kfuOpenOrSetSaveLocation;
 window.kfuToggleSidebar = kfuToggleSidebar;
 window.kfuSaveFile = kfuSaveFile;
 </script>
