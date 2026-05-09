@@ -4004,7 +4004,21 @@ function kfuAttachContextMenu() {
     const selText = sel && !sel.isCollapsed ? sel.toString().trim() : null;
     kfuShowContextMenu(e.clientX, e.clientY, elem, selText);
   });
-  document.addEventListener('mouseup', kfuHandleSelection);
+}
+
+// Wire mouseup ONCE at document level (not on every render) so we can
+// guard against the popover-self-click case.
+if (!window.__kfuMouseupWired) {
+  window.__kfuMouseupWired = true;
+  document.addEventListener('mouseup', (e) => {
+    // Don't re-evaluate selection when the click landed inside any KFU UI:
+    // the popover/menu/popup/sidebar handles its own actions and we must
+    // not destroy them or reset selection here.
+    if (e.target && e.target.closest && e.target.closest(
+      '.kfu-sel-popover, .kfu-add-popup, .kfu-ctx-menu, .kfu-sidebar'
+    )) return;
+    kfuHandleSelection();
+  });
 }
 
 function kfuShowContextMenu(x, y, elem, selectionText) {
@@ -4027,32 +4041,34 @@ function kfuShowContextMenu(x, y, elem, selectionText) {
 }
 
 function kfuHandleSelection() {
+  // Tear down any existing popover before we decide whether to re-show.
   document.querySelectorAll('.kfu-sel-popover').forEach(p => p.remove());
   const sel = window.getSelection();
   if (!sel || !sel.rangeCount || sel.isCollapsed) return;
   const range = sel.getRangeAt(0);
-  // Only show in mdBody
   const mdBody = document.getElementById('mdBody');
   if (!mdBody || !mdBody.contains(range.commonAncestorContainer)) return;
   const text = sel.toString().trim();
   if (text.length < 3) return;
+  // Capture geometry + the element + text NOW (closure) — selection may collapse
+  // by the time the user clicks the popover, but our captured values stay valid.
+  const elem = kfuFindBlock(range.startContainer);
+  if (!elem) return;
   const rect = range.getBoundingClientRect();
   const pop = document.createElement('div');
   pop.className = 'kfu-sel-popover';
   pop.textContent = '💬 Comment';
   pop.style.left = (rect.left + window.scrollX) + 'px';
   pop.style.top = (rect.top + window.scrollY - 36) + 'px';
-  document.body.appendChild(pop);
-  pop.onclick = (e) => {
+  // Stop the mousedown that would (a) deselect the text and (b) also bubble to
+  // the document mousedown cleaner. We still allow click to fire on this elem.
+  pop.addEventListener('mousedown', (e) => { e.preventDefault(); e.stopPropagation(); });
+  pop.addEventListener('click', (e) => {
     e.stopPropagation();
     pop.remove();
-    const elem = kfuFindBlock(range.startContainer);
-    if (elem) kfuShowAddPopup(elem, text);
-  };
-  // Auto-clean popover when selection changes again
-  document.addEventListener('mousedown', function once(ev) {
-    if (!pop.contains(ev.target)) { pop.remove(); document.removeEventListener('mousedown', once); }
+    kfuShowAddPopup(elem, text);
   });
+  document.body.appendChild(pop);
 }
 
 // ------- Keyboard shortcut -------
