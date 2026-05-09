@@ -1555,6 +1555,11 @@ body.kfu-sidebar-open .content-wrapper { padding-right: 380px; }
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
     </button>
 
+    <!-- Workspace folder (one-time pick, zero popups thereafter) -->
+    <button class="btn btn-icon" id="kfuWorkspaceBtn" onclick="kfuPickWorkspace()" title="Set workspace folder (one-time, no more save popups)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+    </button>
+
     <div class="toolbar-sep"></div>
 
     <!-- Theme -->
@@ -1923,14 +1928,23 @@ function handleFileInput(e) {
 
 function readFile(file) {
   const reader = new FileReader();
-  reader.onload = (ev) => {
+  reader.onload = async (ev) => {
     try {
       rawMarkdown = ev.target.result;
       currentFileName = file.name;
-      // Drag-drop / file input has no writable handle; clear any stale one.
+      // Drag-drop / file input has no writable handle. Try the workspace
+      // folder first (zero popups if user has set one). Otherwise clear
+      // any stale handle and prompt on first save.
       if (typeof kfuFileHandle !== 'undefined') {
         kfuFileHandle = null;
-        kfuSetStatus && kfuSetStatus('No save location set — click 📄 or save once', 'error');
+        const wsHandle = await (typeof kfuTryWorkspaceMatch !== 'undefined' ? kfuTryWorkspaceMatch(file.name) : null);
+        if (wsHandle) {
+          kfuFileHandle = wsHandle;
+          try { await kfuPutHandle('current', wsHandle); } catch (e) {}
+          kfuSetStatus && kfuSetStatus('Linked via workspace ✓');
+        } else {
+          kfuSetStatus && kfuSetStatus('No save location — click 📁 to set workspace', 'error');
+        }
       }
       renderMarkdown(rawMarkdown, file.name);
       updateUrl(file.name);
@@ -3478,6 +3492,7 @@ const KFU_RE_ANCHOR = /<!--\s*KFU-ANCHOR\s+id="([a-zA-Z0-9_-]+)"\s*-->/g;
 
 let kfuComments = [];      // flat list of {id, parent_id, anchor, author, body_md, created_at, updated_at, status}
 let kfuFileHandle = null;  // FileSystemFileHandle | null
+let kfuWorkspaceDir = null; // FileSystemDirectoryHandle | null — pick folder once, all files inside save silently
 let kfuDirty = false;
 let kfuSaveTimer = null;
 let kfuLastSavedAt = null;
@@ -4172,18 +4187,72 @@ document.addEventListener('keydown', (e) => {
   };
 })();
 
-// ------- Auto-restore last file on load -------
+// ------- Auto-restore workspace + last file on load -------
 window.addEventListener('load', async () => {
+  // Workspace folder first (so subsequent file loads can auto-link via it)
+  try {
+    const ws = await kfuGetHandle('workspace');
+    if (ws && (await ws.queryPermission({ mode: 'read' })) === 'granted') {
+      kfuWorkspaceDir = ws;
+    }
+  } catch (e) { /* ignore */ }
   try {
     const handle = await kfuGetHandle('current');
     if (!handle) return;
-    // Don't auto-prompt; just enable a "Reopen last" button (could be added to UI)
-    // For now, if permission already granted, restore silently.
     if ((await handle.queryPermission({ mode: 'read' })) === 'granted') {
       await kfuOpenWithHandle(handle);
     }
   } catch (e) { /* IDB unavailable, ignore */ }
 });
+
+// ----- Workspace folder (one-time pick → zero popups forever) -----
+async function kfuPickWorkspace() {
+  if (!('showDirectoryPicker' in window)) {
+    kfuShowToast('This browser does not support workspace folders. Use Chrome / Edge / Brave.', 'error');
+    return null;
+  }
+  let dirHandle;
+  try {
+    dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+  } catch (e) {
+    if (e.name === 'AbortError') return null;
+    console.error(e);
+    return null;
+  }
+  if ((await dirHandle.queryPermission({ mode: 'readwrite' })) !== 'granted') {
+    const p = await dirHandle.requestPermission({ mode: 'readwrite' });
+    if (p !== 'granted') {
+      kfuShowToast('Workspace permission denied.', 'error');
+      return null;
+    }
+  }
+  kfuWorkspaceDir = dirHandle;
+  try { await kfuPutHandle('workspace', dirHandle); } catch (e) {}
+  kfuShowToast('Workspace set to "' + dirHandle.name + '". Files in this folder save silently — no more popups.');
+  // If a file is currently loaded and lives in this folder, link it
+  if (currentFileName && !kfuFileHandle) {
+    try {
+      const fh = await dirHandle.getFileHandle(currentFileName);
+      kfuFileHandle = fh;
+      try { await kfuPutHandle('current', fh); } catch (e) {}
+      // Save current state immediately
+      await kfuSaveFile({ allowPrompt: false });
+    } catch (e) {
+      kfuShowToast('Current file not found in workspace — drag it again from this folder to link.', 'error');
+    }
+  }
+  return dirHandle;
+}
+
+// Try to look up a writable handle for `filename` from the cached workspace.
+// Silent on failure — used during file-load to auto-link without prompting.
+async function kfuTryWorkspaceMatch(filename) {
+  if (!kfuWorkspaceDir || !filename) return null;
+  try {
+    if ((await kfuWorkspaceDir.queryPermission({ mode: 'readwrite' })) !== 'granted') return null;
+    return await kfuWorkspaceDir.getFileHandle(filename);
+  } catch (e) { return null; }
+}
 
 // Smart open/save-location button: if no file is loaded, opens one
 // (writable). If a file is already loaded but no save location yet, opens
@@ -4205,6 +4274,7 @@ async function kfuOpenOrSetSaveLocation() {
 
 // Expose handlers used by inline onclick attributes
 window.kfuPickFile = kfuPickFile;
+window.kfuPickWorkspace = kfuPickWorkspace;
 window.kfuOpenOrSetSaveLocation = kfuOpenOrSetSaveLocation;
 window.kfuToggleSidebar = kfuToggleSidebar;
 window.kfuSaveFile = kfuSaveFile;
