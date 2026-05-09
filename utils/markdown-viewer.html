@@ -20,6 +20,7 @@
 <script src="vendor/markdown-it-sup.min.js"></script>
 <script src="vendor/markdown-it-deflist.min.js"></script>
 <script src="vendor/markdown-it-abbr.min.js"></script>
+<script src="vendor/diff-match-patch.js"></script>
 
 <link rel="stylesheet" href="vendor/github.min.css" id="hljs-light">
 <link rel="stylesheet" href="vendor/github-dark.min.css" id="hljs-dark" disabled>
@@ -1207,6 +1208,277 @@ body.focus-mode .md-body .section-content > .tts-active {
   .md-body h1 { font-size: 1.45rem; }
   .md-body h2 { font-size: 1.2rem; }
 }
+
+/* ============================================
+   KFU Comments — embedded threaded annotations
+   ============================================ */
+
+/* Inline chip rendered next to anchored block */
+.kfu-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  margin-left: 8px;
+  padding: 1px 8px;
+  font-size: 0.72rem;
+  font-family: var(--font-ui);
+  font-weight: 500;
+  background: rgba(107,143,113,0.14);
+  color: #4a6a4f;
+  border: 1px solid rgba(107,143,113,0.3);
+  border-radius: 999px;
+  cursor: pointer;
+  user-select: none;
+  vertical-align: middle;
+  transition: background 0.15s, transform 0.1s;
+}
+.kfu-chip:hover { background: rgba(107,143,113,0.24); transform: translateY(-1px); }
+[data-theme="dark"] .kfu-chip { background: rgba(127,181,137,0.18); color: #9ec5a4; border-color: rgba(127,181,137,0.4); }
+
+.kfu-chip.kfu-chip-resolved { opacity: 0.55; background: transparent; color: var(--text-tertiary); }
+
+.kfu-anchor-highlight { background: rgba(255,210,0,0.22); border-radius: 2px; padding: 0 2px; }
+[data-theme="dark"] .kfu-anchor-highlight { background: rgba(255,210,0,0.28); }
+
+/* Right-side sidebar */
+.kfu-sidebar {
+  position: fixed; top: var(--toolbar-height); right: 0; bottom: 0;
+  width: 360px;
+  background: var(--bg-secondary);
+  border-left: 1px solid var(--border-primary);
+  z-index: 60;
+  display: none;
+  flex-direction: column;
+  font-family: var(--font-ui);
+  transition: transform 0.22s ease;
+}
+.kfu-sidebar.open { display: flex; }
+.kfu-sidebar-head {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-primary);
+  display: flex; align-items: center; gap: 10px;
+  font-weight: 600; font-size: 0.92rem;
+  background: var(--bg-card);
+}
+.kfu-sidebar-head .kfu-status {
+  font-size: 0.76rem; font-weight: 400; color: var(--text-tertiary);
+  margin-left: auto;
+}
+.kfu-sidebar-close {
+  background: none; border: none; color: var(--text-secondary); cursor: pointer;
+  padding: 2px 6px; font-size: 1rem; border-radius: 4px;
+}
+.kfu-sidebar-close:hover { background: var(--bg-hover); color: var(--text-primary); }
+.kfu-thread-list {
+  flex: 1; overflow-y: auto;
+  padding: 12px 14px 24px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.kfu-empty {
+  color: var(--text-tertiary);
+  font-size: 0.85rem;
+  text-align: center;
+  padding: 32px 12px;
+  line-height: 1.5;
+}
+
+/* Thread card */
+.kfu-thread {
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.kfu-thread.kfu-resolved { opacity: 0.65; }
+.kfu-thread.kfu-orphan { border-color: rgba(220, 150, 50, 0.5); background: rgba(255, 230, 180, 0.15); }
+.kfu-thread-head {
+  padding: 8px 12px;
+  background: var(--bg-tertiary);
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-primary);
+}
+.kfu-quote {
+  font-style: italic;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.kfu-quote.kfu-quote-orphan::before { content: "⚠ orphan: "; color: rgb(190, 110, 30); font-style: normal; font-weight: 600; }
+.kfu-replies {
+  padding: 6px 0;
+}
+.kfu-comment {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-primary);
+}
+.kfu-comment:last-child { border-bottom: none; }
+.kfu-comment.kfu-kind-agent { background: rgba(74,144,217,0.05); }
+[data-theme="dark"] .kfu-comment.kfu-kind-agent { background: rgba(74,144,217,0.08); }
+.kfu-author {
+  font-size: 0.72rem;
+  margin-bottom: 4px;
+  display: flex; gap: 8px; align-items: baseline;
+}
+.kfu-author-name { font-weight: 600; color: var(--text-primary); }
+.kfu-kind-agent .kfu-author-name::after { content: " (AI)"; color: rgb(74, 144, 217); font-weight: 400; }
+.kfu-when { color: var(--text-tertiary); font-size: 0.7rem; }
+.kfu-body {
+  font-size: 0.86rem; line-height: 1.45;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+.kfu-reply-row {
+  padding: 8px 12px;
+  background: var(--bg-tertiary);
+  border-top: 1px solid var(--border-primary);
+  display: flex; flex-direction: column; gap: 6px;
+}
+.kfu-reply-input {
+  width: 100%;
+  min-height: 48px;
+  resize: vertical;
+  border: 1px solid var(--border-primary);
+  border-radius: 4px;
+  padding: 6px 8px;
+  font-family: var(--font-ui);
+  font-size: 0.84rem;
+  color: var(--text-primary);
+  background: var(--bg-card);
+  outline: none;
+}
+.kfu-reply-input:focus { border-color: var(--border-accent); }
+.kfu-reply-actions { display: flex; gap: 6px; justify-content: flex-end; }
+.kfu-btn {
+  font-size: 0.78rem;
+  padding: 4px 10px;
+  border: 1px solid var(--border-primary);
+  border-radius: 4px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-family: var(--font-ui);
+}
+.kfu-btn:hover { background: var(--bg-hover); }
+.kfu-btn-primary { background: rgb(107,143,113); color: white; border-color: rgb(107,143,113); }
+.kfu-btn-primary:hover { background: rgb(90,123,96); }
+
+/* Custom right-click menu */
+.kfu-ctx-menu {
+  position: fixed;
+  z-index: 9999;
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  padding: 4px 0;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.18);
+  min-width: 180px;
+  font-family: var(--font-ui);
+}
+.kfu-ctx-item {
+  display: block; width: 100%; text-align: left;
+  background: none; border: none; cursor: pointer;
+  padding: 6px 14px;
+  font-size: 0.86rem; color: var(--text-primary);
+  font-family: inherit;
+}
+.kfu-ctx-item:hover { background: var(--bg-hover); }
+
+/* Selection floating popover */
+.kfu-sel-popover {
+  position: absolute;
+  z-index: 9999;
+  background: var(--text-primary);
+  color: var(--bg-card);
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-family: var(--font-ui);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+  cursor: pointer;
+  user-select: none;
+}
+.kfu-sel-popover:hover { background: var(--text-secondary); }
+
+/* Add-comment popup */
+.kfu-add-popup {
+  position: absolute;
+  z-index: 9999;
+  width: 320px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  box-shadow: 0 10px 32px rgba(0,0,0,0.22);
+  padding: 12px;
+  font-family: var(--font-ui);
+}
+.kfu-add-head {
+  font-size: 0.76rem; color: var(--text-tertiary);
+  text-transform: uppercase; letter-spacing: 0.05em;
+  margin-bottom: 6px;
+}
+.kfu-add-input {
+  width: 100%;
+  min-height: 80px;
+  resize: vertical;
+  border: 1px solid var(--border-primary);
+  border-radius: 4px;
+  padding: 8px;
+  font-family: var(--font-ui);
+  font-size: 0.88rem;
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+  outline: none;
+  box-sizing: border-box;
+}
+.kfu-add-input:focus { border-color: var(--border-accent); }
+.kfu-add-actions {
+  margin-top: 8px;
+  display: flex; gap: 6px; justify-content: flex-end;
+}
+
+/* Toast */
+.kfu-toast {
+  position: fixed;
+  bottom: 24px; left: 50%;
+  transform: translate(-50%, 20px);
+  background: var(--text-primary);
+  color: var(--bg-card);
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-size: 0.84rem;
+  font-family: var(--font-ui);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+  opacity: 0;
+  transition: opacity 0.22s, transform 0.22s;
+  z-index: 9999;
+  max-width: 480px;
+}
+.kfu-toast.show { opacity: 1; transform: translate(-50%, 0); }
+.kfu-toast-error { background: rgb(180, 60, 50); }
+
+/* Save status pill in toolbar */
+.kfu-save-status {
+  font-size: 0.74rem;
+  color: var(--text-tertiary);
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--bg-tertiary);
+}
+.kfu-save-status.kfu-status-saving { color: rgb(180, 130, 30); }
+.kfu-save-status.kfu-status-error  { color: rgb(190, 60, 50); }
+
+/* Toolbar comment button */
+.toolbar-btn.kfu-active {
+  background: rgba(107,143,113,0.18);
+  color: #4a6a4f;
+}
+
+/* When sidebar is open, push content area */
+body.kfu-sidebar-open .content-wrapper { padding-right: 380px; }
+@media (max-width: 1100px) {
+  body.kfu-sidebar-open .content-wrapper { padding-right: 14px; }
+  body.kfu-sidebar-open .kfu-sidebar { box-shadow: -10px 0 30px rgba(0,0,0,0.18); }
+}
+
 </style>
 </head>
 <body>
@@ -1219,6 +1491,7 @@ body.focus-mode .md-body .section-content > .tts-active {
   </span>
   <span class="toolbar-breadcrumb" id="breadcrumb"></span>
   <span class="toolbar-meta" id="readingMeta"></span>
+  <span class="kfu-save-status" id="kfuSaveStatus" style="display:none"></span>
 
   <span class="toolbar-spacer"></span>
 
@@ -1269,6 +1542,17 @@ body.focus-mode .md-body .section-content > .tts-active {
     <button class="btn" id="ttsToggleBtn" onclick="ttsToggle()" title="Read aloud" style="display:none">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 010 7.07"/><path d="M19.07 4.93a10 10 0 010 14.14"/></svg>
       <span class="lbl">Listen</span>
+    </button>
+
+    <!-- KFU Comments toggle -->
+    <button class="btn btn-icon" id="kfuToggleBtn" onclick="kfuToggleSidebar()" title="Comments (Ctrl+Shift+C)" style="display:none">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <span class="kfu-badge" id="kfuBadge" style="display:none"></span>
+    </button>
+
+    <!-- Open file via FSA (writable) -->
+    <button class="btn btn-icon" id="kfuOpenBtn" onclick="kfuPickFile()" title="Open .md (writable, Chromium)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
     </button>
 
     <div class="toolbar-sep"></div>
@@ -1416,6 +1700,16 @@ body.focus-mode .md-body .section-content > .tts-active {
   <button class="fab" id="fabUp" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Scroll to top">&#8593;</button>
   <button class="fab" id="fabDown" onclick="window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'})" title="Scroll to bottom">&#8595;</button>
 </div>
+
+<!-- KFU Comments sidebar -->
+<aside class="kfu-sidebar" id="kfuSidebar" aria-hidden="true">
+  <div class="kfu-sidebar-head">
+    <span>💬 Comments</span>
+    <span class="kfu-status" id="kfuSidebarStatus"></span>
+    <button class="kfu-sidebar-close" onclick="kfuToggleSidebar()" aria-label="Close comments">&times;</button>
+  </div>
+  <div class="kfu-thread-list" id="kfuThreadList"></div>
+</aside>
 
 <!-- TTS Player bar -->
 <div class="tts-player" id="ttsPlayer">
@@ -3164,6 +3458,653 @@ Text with a footnote[^1].
   rawMarkdown = demo;
   renderMarkdown(demo, 'Demo Document');
 }
+
+// ============================================
+// KFU Comments — embedded threaded annotations
+// ============================================
+// Storage format:
+//   Inline marker: <!-- KFU-ANCHOR id="..." --> placed BEFORE target block
+//   Trailing block: <!-- KFU-COMMENTS:v1 ... KFU-COMMENTS:end --> at end of file (single JSON payload)
+// All markers use the KFU- namespace prefix; other CommonMark renderers ignore HTML comments.
+
+const KFU_VERSION = 1;
+const KFU_RE_BLOCK = /<!--\s*KFU-COMMENTS:v(\d+)\s*([\s\S]*?)\s*KFU-COMMENTS:end\s*-->/;
+const KFU_RE_ANCHOR = /<!--\s*KFU-ANCHOR\s+id="([a-zA-Z0-9_-]+)"\s*-->/g;
+
+let kfuComments = [];      // flat list of {id, parent_id, anchor, author, body_md, created_at, updated_at, status}
+let kfuFileHandle = null;  // FileSystemFileHandle | null
+let kfuDirty = false;
+let kfuSaveTimer = null;
+let kfuLastSavedAt = null;
+let kfuAuthorName = localStorage.getItem('kfu-author-name') || 'You';
+const _kfuDmp = (typeof diff_match_patch !== 'undefined') ? new diff_match_patch() : null;
+
+// ------- Parse / serialize -------
+function kfuParseFile(src) {
+  const m = src.match(KFU_RE_BLOCK);
+  if (!m) return { stripped: src, comments: [], parseError: null };
+  let comments = [];
+  let parseError = null;
+  try {
+    const json = m[2].replace(/\\u002d/g, '-').replace(/\\u003c/g, '<');
+    const obj = JSON.parse(json);
+    comments = Array.isArray(obj.comments) ? obj.comments : [];
+  } catch (e) {
+    parseError = e.message;
+  }
+  return { stripped: src, comments, parseError };
+}
+
+function kfuSerialize(src, comments) {
+  const noBlock = src.replace(KFU_RE_BLOCK, '').replace(/\n+$/, '');
+  if (!comments || comments.length === 0) return noBlock + '\n';
+  const json = JSON.stringify({ version: KFU_VERSION, generator: 'kfu-viewer', comments });
+  // Escape sequences that would break out of the HTML comment: --, <
+  const safe = json.replace(/--/g, '-\\u002d').replace(/</g, '\\u003c');
+  return noBlock + '\n\n<!-- KFU-COMMENTS:v' + KFU_VERSION + '\n' + safe + '\nKFU-COMMENTS:end -->\n';
+}
+
+// ------- Anchor utilities -------
+function kfuShortId() {
+  return 'c_' + Math.random().toString(36).slice(2, 12);
+}
+function kfuNormalize(t) { return (t || '').toLowerCase().replace(/\s+/g, ' ').trim(); }
+
+async function kfuHash(text) {
+  const enc = new TextEncoder().encode(text);
+  const buf = await crypto.subtle.digest('SHA-256', enc);
+  return Array.from(new Uint8Array(buf, 0, 8)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function kfuComputeAnchor(elem, selectionText) {
+  const blockText = (elem.innerText || elem.textContent || '').trim();
+  const blockHash = await kfuHash(kfuNormalize(blockText));
+  const sibIdx = Array.from(elem.parentNode ? elem.parentNode.children : []).indexOf(elem);
+  const id = kfuShortId();
+  let quote = null;
+  if (selectionText) {
+    const fullText = elem.innerText || '';
+    const i = fullText.indexOf(selectionText);
+    if (i >= 0) {
+      quote = {
+        exact: selectionText,
+        prefix: fullText.slice(Math.max(0, i - 32), i),
+        suffix: fullText.slice(i + selectionText.length, i + selectionText.length + 32)
+      };
+    } else {
+      quote = { exact: selectionText, prefix: '', suffix: '' };
+    }
+  }
+  return { id, blockKind: elem.tagName.toLowerCase(), blockHash, sibIdx, quote };
+}
+
+// Find map of anchor-id -> DOM element by walking comment nodes in render
+function kfuBuildAnchorMap(container) {
+  const map = {};
+  if (!container) return map;
+  const walker = document.createTreeWalker(container, NodeFilter.SHOW_COMMENT);
+  let node;
+  while ((node = walker.nextNode())) {
+    const m = node.nodeValue.match(/^\s*KFU-ANCHOR\s+id="([a-zA-Z0-9_-]+)"\s*$/);
+    if (m) {
+      let next = node.nextSibling;
+      // skip text-node whitespace
+      while (next && next.nodeType !== 1) next = next.nextSibling;
+      if (next) map[m[1]] = next;
+    }
+  }
+  return map;
+}
+
+// Resolve anchor to DOM element; returns {elem, strength: 'exact'|'fuzzy'|'orphan'}
+function kfuResolveAnchor(anchor, container) {
+  // Level 1: marker by ID
+  const idMap = kfuBuildAnchorMap(container);
+  if (anchor.id && idMap[anchor.id]) return { elem: idMap[anchor.id], strength: 'exact' };
+  // Level 2 (synchronous fallback): match by sibling-index + tag — approximate
+  if (anchor.blockKind && typeof anchor.sibIdx === 'number') {
+    const candidates = container.querySelectorAll(anchor.blockKind);
+    if (candidates[anchor.sibIdx]) return { elem: candidates[anchor.sibIdx], strength: 'weak' };
+  }
+  // Level 3: fuzzy match the quote text
+  if (anchor.quote && anchor.quote.exact && _kfuDmp) {
+    _kfuDmp.Match_Threshold = 0.5;
+    _kfuDmp.Match_Distance = 1000;
+    const flat = container.innerText || '';
+    const idx = _kfuDmp.match_main(flat, anchor.quote.exact, 0);
+    if (idx !== -1) {
+      let cursor = 0;
+      const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+      let n;
+      while ((n = walker.nextNode())) {
+        if (cursor + n.nodeValue.length >= idx) {
+          let el = n.parentElement;
+          const blockKinds = ['P','LI','H1','H2','H3','H4','H5','H6','BLOCKQUOTE','PRE','TD','DT','DD'];
+          while (el && !blockKinds.includes(el.tagName)) el = el.parentElement;
+          if (el) return { elem: el, strength: 'fuzzy' };
+          break;
+        }
+        cursor += n.nodeValue.length;
+      }
+    }
+  }
+  return { elem: null, strength: 'orphan' };
+}
+
+// ------- File handle persistence (IndexedDB) -------
+const KFU_DB = 'kfu-viewer';
+const KFU_STORE = 'handles';
+function kfuOpenDb() {
+  return new Promise((res, rej) => {
+    const r = indexedDB.open(KFU_DB, 1);
+    r.onupgradeneeded = (e) => e.target.result.createObjectStore(KFU_STORE);
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error);
+  });
+}
+async function kfuPutHandle(key, h) {
+  const db = await kfuOpenDb();
+  return new Promise((res, rej) => {
+    const tx = db.transaction(KFU_STORE, 'readwrite');
+    tx.objectStore(KFU_STORE).put(h, key);
+    tx.oncomplete = () => res();
+    tx.onerror = () => rej(tx.error);
+  });
+}
+async function kfuGetHandle(key) {
+  try {
+    const db = await kfuOpenDb();
+    return new Promise((res, rej) => {
+      const tx = db.transaction(KFU_STORE, 'readonly');
+      const r = tx.objectStore(KFU_STORE).get(key);
+      r.onsuccess = () => res(r.result);
+      r.onerror = () => rej(r.error);
+    });
+  } catch (e) { return null; }
+}
+
+// ------- File picking + saving -------
+async function kfuPickFile() {
+  if (!('showOpenFilePicker' in window)) {
+    kfuShowToast('Browser does not support in-place save. Drag-drop a file and use "Download with comments" to save changes.', 'error');
+    document.getElementById('mdFile').click();
+    return;
+  }
+  let handle;
+  try {
+    [handle] = await window.showOpenFilePicker({
+      multiple: false,
+      types: [{ description: 'Markdown', accept: { 'text/plain': ['.md', '.markdown', '.txt'] } }]
+    });
+  } catch (e) {
+    if (e.name === 'AbortError') return;
+    throw e;
+  }
+  await kfuOpenWithHandle(handle);
+}
+
+async function kfuOpenWithHandle(handle) {
+  if ((await handle.queryPermission({ mode: 'readwrite' })) !== 'granted') {
+    const perm = await handle.requestPermission({ mode: 'readwrite' });
+    if (perm !== 'granted') {
+      kfuShowToast('Read-only access; comments will not save back to disk.', 'error');
+    }
+  }
+  kfuFileHandle = handle;
+  await kfuPutHandle('current', handle);
+  const file = await handle.getFile();
+  const text = await file.text();
+  rawMarkdown = text;
+  currentFileName = file.name;
+  renderMarkdown(text, file.name);
+}
+
+async function kfuSaveFile(silent) {
+  if (!kfuFileHandle) {
+    // Fallback: download the modified text
+    return kfuDownloadFallback();
+  }
+  if ((await kfuFileHandle.queryPermission({ mode: 'readwrite' })) !== 'granted') {
+    try {
+      const p = await kfuFileHandle.requestPermission({ mode: 'readwrite' });
+      if (p !== 'granted') { kfuSetStatus('Permission denied', 'error'); return false; }
+    } catch (e) {
+      kfuSetStatus('Click anywhere to grant', 'error');
+      return false;
+    }
+  }
+  const text = kfuSerialize(rawMarkdown, kfuComments);
+  rawMarkdown = text;
+  try {
+    const w = await kfuFileHandle.createWritable();
+    await w.write(text);
+    await w.close();
+    kfuDirty = false;
+    kfuLastSavedAt = Date.now();
+    if (!silent) kfuSetStatus('Saved');
+    setTimeout(() => { if (Date.now() - kfuLastSavedAt > 2500) kfuSetStatus(''); }, 3000);
+    return true;
+  } catch (e) {
+    kfuSetStatus('Save failed', 'error');
+    console.error('KFU save failed:', e);
+    return false;
+  }
+}
+
+function kfuDownloadFallback() {
+  const text = kfuSerialize(rawMarkdown, kfuComments);
+  rawMarkdown = text;
+  const blob = new Blob([text], { type: 'text/markdown;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = currentFileName || 'document.md';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  kfuSetStatus('Downloaded — replace original to persist');
+  return true;
+}
+
+function kfuScheduleSave() {
+  kfuDirty = true;
+  kfuSetStatus('Saving…', 'saving');
+  if (kfuSaveTimer) clearTimeout(kfuSaveTimer);
+  kfuSaveTimer = setTimeout(() => kfuSaveFile(), 1500);
+}
+
+function kfuSetStatus(text, kind) {
+  const el = document.getElementById('kfuSaveStatus');
+  if (!el) return;
+  el.style.display = text ? '' : 'none';
+  el.textContent = text;
+  el.className = 'kfu-save-status' + (kind === 'saving' ? ' kfu-status-saving' : (kind === 'error' ? ' kfu-status-error' : ''));
+}
+
+// ------- UI -------
+function kfuShowToast(msg, kind) {
+  const t = document.createElement('div');
+  t.className = 'kfu-toast' + (kind === 'error' ? ' kfu-toast-error' : '');
+  t.textContent = msg;
+  document.body.appendChild(t);
+  requestAnimationFrame(() => t.classList.add('show'));
+  setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, 3500);
+}
+
+function kfuEscape(s) { return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function kfuThreadTree() {
+  const byId = {};
+  kfuComments.forEach(c => byId[c.id] = Object.assign({}, c, { replies: [] }));
+  const roots = [];
+  Object.values(byId).forEach(c => {
+    if (c.parent_id && byId[c.parent_id]) byId[c.parent_id].replies.push(c);
+    else if (!c.parent_id) roots.push(c);
+  });
+  const sortFn = (a, b) => (a.created_at || '').localeCompare(b.created_at || '');
+  roots.sort(sortFn);
+  Object.values(byId).forEach(c => c.replies.sort(sortFn));
+  return roots;
+}
+
+function kfuToggleSidebar(force) {
+  const sb = document.getElementById('kfuSidebar');
+  const willOpen = (force === true) || (force == null && !sb.classList.contains('open'));
+  sb.classList.toggle('open', willOpen);
+  document.body.classList.toggle('kfu-sidebar-open', willOpen);
+  document.getElementById('kfuToggleBtn').classList.toggle('kfu-active', willOpen);
+  sb.setAttribute('aria-hidden', willOpen ? 'false' : 'true');
+}
+
+function kfuRenderSidebar() {
+  const list = document.getElementById('kfuThreadList');
+  if (!list) return;
+  const status = document.getElementById('kfuSidebarStatus');
+  list.innerHTML = '';
+  const roots = kfuThreadTree();
+  if (roots.length === 0) {
+    list.innerHTML = '<div class="kfu-empty">No comments yet.<br>Right-click any paragraph or select text to add one.</div>';
+    if (status) status.textContent = '';
+  } else {
+    if (status) status.textContent = roots.length + ' thread' + (roots.length === 1 ? '' : 's');
+  }
+  const idMap = kfuBuildAnchorMap(document.getElementById('mdBody'));
+  roots.forEach(thread => {
+    const card = document.createElement('div');
+    card.className = 'kfu-thread' + (thread.status === 'resolved' ? ' kfu-resolved' : '');
+    card.dataset.threadId = thread.id;
+    const elem = thread.anchor && idMap[thread.anchor.id];
+    const isOrphan = !elem && thread.anchor;
+    if (isOrphan) card.classList.add('kfu-orphan');
+    card.innerHTML = kfuRenderThreadCard(thread, isOrphan);
+    list.appendChild(card);
+    // Wire reply submit
+    const ta = card.querySelector('.kfu-reply-input');
+    const replyBtn = card.querySelector('.kfu-reply-btn');
+    if (replyBtn) replyBtn.onclick = () => kfuPostReply(thread.id, ta);
+    if (ta) ta.addEventListener('keydown', (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') kfuPostReply(thread.id, ta);
+    });
+    const resBtn = card.querySelector('.kfu-resolve-btn');
+    if (resBtn) resBtn.onclick = () => kfuResolveThread(thread.id);
+    const delBtn = card.querySelector('.kfu-delete-btn');
+    if (delBtn) delBtn.onclick = () => kfuDeleteThread(thread.id);
+  });
+  kfuRenderChips();
+  // Update toolbar badge
+  const badge = document.getElementById('kfuBadge');
+  if (badge) {
+    const open = roots.filter(t => t.status !== 'resolved').length;
+    badge.textContent = open || '';
+    badge.style.display = open ? '' : 'none';
+  }
+  // Show toggle button now that we have a doc loaded
+  const tgl = document.getElementById('kfuToggleBtn');
+  if (tgl) tgl.style.display = '';
+}
+
+function kfuRenderThreadCard(thread, isOrphan) {
+  const quote = (thread.anchor && thread.anchor.quote && thread.anchor.quote.exact) || '(block)';
+  let html = '<div class="kfu-thread-head">';
+  html += '<div class="kfu-quote' + (isOrphan ? ' kfu-quote-orphan' : '') + '">' + kfuEscape(quote.slice(0, 140)) + '</div>';
+  html += '</div>';
+  html += '<div class="kfu-replies">';
+  html += kfuRenderCommentBody(thread);
+  thread.replies.forEach(r => { html += kfuRenderCommentBody(r); });
+  html += '</div>';
+  if (thread.status !== 'resolved') {
+    html += '<div class="kfu-reply-row">';
+    html += '<textarea class="kfu-reply-input" placeholder="Reply… (Cmd+Enter to send)"></textarea>';
+    html += '<div class="kfu-reply-actions">';
+    html += '<button class="kfu-btn kfu-delete-btn" title="Delete thread">Delete</button>';
+    html += '<button class="kfu-btn kfu-resolve-btn">Resolve</button>';
+    html += '<button class="kfu-btn kfu-btn-primary kfu-reply-btn">Reply</button>';
+    html += '</div></div>';
+  } else {
+    html += '<div class="kfu-reply-row"><div class="kfu-reply-actions">';
+    html += '<button class="kfu-btn kfu-resolve-btn">Reopen</button>';
+    html += '</div></div>';
+  }
+  return html;
+}
+
+function kfuRenderCommentBody(c) {
+  const author = c.author ? c.author.name : 'Anon';
+  const kind = c.author ? (c.author.kind || 'human') : 'human';
+  const when = c.created_at ? new Date(c.created_at).toLocaleString() : '';
+  return '<div class="kfu-comment kfu-kind-' + kfuEscape(kind) + '" data-comment-id="' + kfuEscape(c.id) + '">' +
+         '<div class="kfu-author"><span class="kfu-author-name">' + kfuEscape(author) + '</span>' +
+         '<span class="kfu-when">' + kfuEscape(when) + '</span></div>' +
+         '<div class="kfu-body">' + kfuEscape(c.body_md || '') + '</div></div>';
+}
+
+function kfuRenderChips() {
+  document.querySelectorAll('.kfu-chip').forEach(c => c.remove());
+  const idMap = kfuBuildAnchorMap(document.getElementById('mdBody'));
+  const roots = kfuThreadTree();
+  roots.forEach(thread => {
+    if (!thread.anchor) return;
+    const elem = idMap[thread.anchor.id];
+    if (!elem) return; // orphan — only shown in sidebar
+    const count = 1 + thread.replies.length;
+    const chip = document.createElement('span');
+    chip.className = 'kfu-chip' + (thread.status === 'resolved' ? ' kfu-chip-resolved' : '');
+    chip.textContent = '💬 ' + count;
+    chip.title = 'Open thread';
+    chip.dataset.threadId = thread.id;
+    chip.setAttribute('role', 'button');
+    chip.setAttribute('aria-label', 'Comment thread, ' + count + ' message' + (count === 1 ? '' : 's'));
+    chip.onclick = (e) => { e.stopPropagation(); kfuFocusThread(thread.id); };
+    elem.appendChild(chip);
+  });
+}
+
+function kfuFocusThread(id) {
+  kfuToggleSidebar(true);
+  setTimeout(() => {
+    const card = document.querySelector('.kfu-thread[data-thread-id="' + id + '"]');
+    if (card) {
+      card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      card.style.outline = '2px solid rgb(107,143,113)';
+      setTimeout(() => card.style.outline = '', 1200);
+    }
+  }, 80);
+}
+
+// ------- Add comment popup -------
+async function kfuShowAddPopup(elem, selectionText) {
+  document.querySelectorAll('.kfu-add-popup').forEach(p => p.remove());
+  const rect = elem.getBoundingClientRect();
+  const pop = document.createElement('div');
+  pop.className = 'kfu-add-popup';
+  pop.innerHTML = '<div class="kfu-add-head">Add comment</div>' +
+                  '<textarea class="kfu-add-input" placeholder="Type your comment… (Cmd+Enter to save, Esc to cancel)"></textarea>' +
+                  '<div class="kfu-add-actions">' +
+                  '<button class="kfu-btn kfu-add-cancel">Cancel</button>' +
+                  '<button class="kfu-btn kfu-btn-primary kfu-add-save">Save</button></div>';
+  const left = Math.min(window.innerWidth - 340, Math.max(8, rect.left));
+  const top = Math.min(window.innerHeight - 200, rect.bottom + window.scrollY + 6);
+  pop.style.left = left + 'px';
+  pop.style.top  = top + 'px';
+  document.body.appendChild(pop);
+  const ta = pop.querySelector('textarea');
+  ta.focus();
+  pop.querySelector('.kfu-add-cancel').onclick = () => pop.remove();
+  pop.querySelector('.kfu-add-save').onclick = async () => {
+    const body = ta.value.trim();
+    if (!body) { pop.remove(); return; }
+    pop.remove();
+    await kfuAddComment(elem, selectionText, body);
+  };
+  ta.addEventListener('keydown', (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') pop.querySelector('.kfu-add-save').click();
+    if (e.key === 'Escape') pop.remove();
+  });
+}
+
+async function kfuAddComment(elem, selectionText, body) {
+  const anchor = await kfuComputeAnchor(elem, selectionText);
+  // Inject anchor marker into rawMarkdown source
+  const blockText = (elem.innerText || elem.textContent || '').trim();
+  let injected = false;
+  if (blockText) {
+    const idx = rawMarkdown.indexOf(blockText);
+    if (idx >= 0) {
+      // Insert anchor on its own line before the block
+      const before = rawMarkdown.slice(0, idx);
+      const after = rawMarkdown.slice(idx);
+      const lineStart = before.lastIndexOf('\n') + 1;
+      const prefix = rawMarkdown.slice(0, lineStart);
+      const suffix = rawMarkdown.slice(lineStart);
+      rawMarkdown = prefix + '<!-- KFU-ANCHOR id="' + anchor.id + '" -->\n' + suffix;
+      injected = true;
+    }
+  }
+  if (!injected) {
+    // Couldn't precisely locate; append marker before the file's KFU-COMMENTS block (last resort)
+    console.warn('KFU: could not inject anchor marker for', anchor.id, '— comment will be orphan-tracked.');
+  }
+  const comment = {
+    id: 'cm_' + Math.random().toString(36).slice(2, 12),
+    parent_id: null,
+    anchor: anchor,
+    author: { name: kfuAuthorName, kind: 'human' },
+    body_md: body,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    status: 'open'
+  };
+  kfuComments.push(comment);
+  // Re-render so the anchor marker is parsed into a Comment node
+  renderMarkdown(rawMarkdown, currentFileName);
+  kfuToggleSidebar(true);
+  kfuFocusThread(comment.id);
+  kfuScheduleSave();
+}
+
+function kfuPostReply(threadId, textareaEl) {
+  const body = (textareaEl.value || '').trim();
+  if (!body) return;
+  kfuComments.push({
+    id: 'cm_' + Math.random().toString(36).slice(2, 12),
+    parent_id: threadId,
+    author: { name: kfuAuthorName, kind: 'human' },
+    body_md: body,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    status: 'open'
+  });
+  textareaEl.value = '';
+  kfuRenderSidebar();
+  kfuScheduleSave();
+}
+
+function kfuResolveThread(threadId) {
+  const c = kfuComments.find(x => x.id === threadId);
+  if (!c) return;
+  c.status = c.status === 'resolved' ? 'open' : 'resolved';
+  c.updated_at = new Date().toISOString();
+  kfuRenderSidebar();
+  kfuScheduleSave();
+}
+
+function kfuDeleteThread(threadId) {
+  if (!confirm('Delete this thread? It will be permanently removed.')) return;
+  kfuComments = kfuComments.filter(c => c.id !== threadId && c.parent_id !== threadId);
+  // Also strip the anchor marker from rawMarkdown
+  const root = kfuComments.find(c => c.id === threadId);
+  // (we already filtered, so look at the original anchor — need to keep the id)
+  // Easier: just re-derive from current rawMarkdown — strip any KFU-ANCHOR not referenced by remaining comments
+  const refs = new Set();
+  kfuComments.forEach(c => { if (c.anchor && c.anchor.id) refs.add(c.anchor.id); });
+  rawMarkdown = rawMarkdown.replace(KFU_RE_ANCHOR, (m, id) => refs.has(id) ? m : '');
+  // Clean up double blank lines
+  rawMarkdown = rawMarkdown.replace(/\n{3,}/g, '\n\n');
+  renderMarkdown(rawMarkdown, currentFileName);
+  kfuScheduleSave();
+}
+
+// ------- Right-click + selection UX -------
+const KFU_BLOCK_TAGS = ['P','LI','H1','H2','H3','H4','H5','H6','BLOCKQUOTE','PRE','TD','DT','DD'];
+
+function kfuFindBlock(node) {
+  let el = node && (node.nodeType === 3 ? node.parentElement : node);
+  while (el && !KFU_BLOCK_TAGS.includes(el.tagName)) el = el.parentElement;
+  return el;
+}
+
+function kfuAttachContextMenu() {
+  const content = document.getElementById('mdBody');
+  if (!content || content.__kfuWired) return;
+  content.__kfuWired = true;
+  content.addEventListener('contextmenu', (e) => {
+    if (e.shiftKey) return; // shift-right-click yields native menu
+    const elem = kfuFindBlock(e.target);
+    if (!elem) return;
+    e.preventDefault();
+    const sel = window.getSelection();
+    const selText = sel && !sel.isCollapsed ? sel.toString().trim() : null;
+    kfuShowContextMenu(e.clientX, e.clientY, elem, selText);
+  });
+  document.addEventListener('mouseup', kfuHandleSelection);
+}
+
+function kfuShowContextMenu(x, y, elem, selectionText) {
+  document.querySelectorAll('.kfu-ctx-menu').forEach(m => m.remove());
+  const menu = document.createElement('div');
+  menu.className = 'kfu-ctx-menu';
+  menu.innerHTML = '<button class="kfu-ctx-item">💬 Add comment' + (selectionText ? ' on selection' : '') + '</button>';
+  menu.style.left = Math.min(window.innerWidth - 200, x) + 'px';
+  menu.style.top = Math.min(window.innerHeight - 60, y) + 'px';
+  document.body.appendChild(menu);
+  menu.querySelector('button').onclick = () => {
+    menu.remove();
+    kfuShowAddPopup(elem, selectionText);
+  };
+  setTimeout(() => {
+    document.addEventListener('mousedown', function close(e) {
+      if (!menu.contains(e.target)) { menu.remove(); document.removeEventListener('mousedown', close); }
+    });
+  }, 10);
+}
+
+function kfuHandleSelection() {
+  document.querySelectorAll('.kfu-sel-popover').forEach(p => p.remove());
+  const sel = window.getSelection();
+  if (!sel || !sel.rangeCount || sel.isCollapsed) return;
+  const range = sel.getRangeAt(0);
+  // Only show in mdBody
+  const mdBody = document.getElementById('mdBody');
+  if (!mdBody || !mdBody.contains(range.commonAncestorContainer)) return;
+  const text = sel.toString().trim();
+  if (text.length < 3) return;
+  const rect = range.getBoundingClientRect();
+  const pop = document.createElement('div');
+  pop.className = 'kfu-sel-popover';
+  pop.textContent = '💬 Comment';
+  pop.style.left = (rect.left + window.scrollX) + 'px';
+  pop.style.top = (rect.top + window.scrollY - 36) + 'px';
+  document.body.appendChild(pop);
+  pop.onclick = (e) => {
+    e.stopPropagation();
+    pop.remove();
+    const elem = kfuFindBlock(range.startContainer);
+    if (elem) kfuShowAddPopup(elem, text);
+  };
+  // Auto-clean popover when selection changes again
+  document.addEventListener('mousedown', function once(ev) {
+    if (!pop.contains(ev.target)) { pop.remove(); document.removeEventListener('mousedown', once); }
+  });
+}
+
+// ------- Keyboard shortcut -------
+document.addEventListener('keydown', (e) => {
+  // Ctrl/Cmd+Shift+C — toggle comments sidebar
+  if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'C' || e.key === 'c')) {
+    e.preventDefault();
+    kfuToggleSidebar();
+  }
+  // Ctrl/Cmd+S — save
+  if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
+    if (kfuFileHandle) {
+      e.preventDefault();
+      kfuSaveFile();
+    }
+  }
+});
+
+// ------- Hook into renderMarkdown -------
+(function () {
+  const orig = window.renderMarkdown;
+  window.renderMarkdown = function(source, title) {
+    // Parse comments out of source data; the anchor markers stay in source so they render as DOM Comment nodes
+    const parsed = kfuParseFile(source);
+    kfuComments = parsed.comments;
+    if (parsed.parseError) kfuShowToast('Comments parse error: ' + parsed.parseError, 'error');
+    // Render the source with markers intact (CommonMark renders HTML comments through unchanged)
+    orig(source, title);
+    setTimeout(() => {
+      kfuAttachContextMenu();
+      kfuRenderSidebar();
+    }, 50);
+  };
+})();
+
+// ------- Auto-restore last file on load -------
+window.addEventListener('load', async () => {
+  try {
+    const handle = await kfuGetHandle('current');
+    if (!handle) return;
+    // Don't auto-prompt; just enable a "Reopen last" button (could be added to UI)
+    // For now, if permission already granted, restore silently.
+    if ((await handle.queryPermission({ mode: 'read' })) === 'granted') {
+      await kfuOpenWithHandle(handle);
+    }
+  } catch (e) { /* IDB unavailable, ignore */ }
+});
+
+// Expose handlers used by inline onclick attributes
+window.kfuPickFile = kfuPickFile;
+window.kfuToggleSidebar = kfuToggleSidebar;
+window.kfuSaveFile = kfuSaveFile;
 </script>
 </body>
 </html>
