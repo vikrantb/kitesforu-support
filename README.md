@@ -60,6 +60,11 @@ See `SYSTEM_STATE.md` for:
 - Data flow documentation
 - Known gotchas and verification commands
 
+## Markdown viewer
+
+The markdown viewer that used to live in `utils/` moved to its own repository:
+[vikrantb/kites-markdown](https://github.com/vikrantb/kites-markdown).
+
 ## Collaboration Framework
 
 The `docs/collaboration/` directory contains the kiteagentcollab framework for structured Claude-Codex collaboration. See the [Getting Started Guide](docs/collaboration/docs/00-getting-started.md).
